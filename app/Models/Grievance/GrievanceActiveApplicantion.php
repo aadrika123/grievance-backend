@@ -183,4 +183,64 @@ class GrievanceActiveApplicantion extends Model
             ->join('m_grievance_apply_through', 'm_grievance_apply_through.id', 'grievance_active_applicantions.user_apply_through')
             ->where('grievance_active_applicantions.status', 1);
     }
+
+
+    /**
+     * | Save the Grievance to the associated wf
+     */
+    public function saveGrievanceInAssociatedWf($refApplication, $database, $refMetaReq)
+    {
+        $now = Carbon::now();
+        DB::table($database)->insert([
+            "mobile_no"             => $refApplication->mobile_no,
+            "email"                 => $refApplication->email,
+            "applicant_name"        => $refApplication->applicant_name,
+            "uid"                   => $refApplication->uid,
+            "created_at"            => $now,
+            "updated_at"            => $now,
+            "description"           => $refApplication->description,
+            "grievance_head"        => $refApplication->grievance_head,
+            "department"            => $refApplication->department,
+            "gender"                => $refApplication->gender,
+            "disability"            => $refApplication->disability,
+            "address"               => $refApplication->address,
+            "district_id"           => $refApplication->district_id,
+            "ulb_id"                => $refApplication->ulb_id,
+            "ward_id"               => $refApplication->ward_id,
+            "application_no"        => $refApplication->application_no,
+            "current_role"          => $refMetaReq['initiatorRoleId'],
+            "initiator_id"          => $refMetaReq['initiatorRoleId'],
+            "finisher_id"           => $refMetaReq['finisherRoleId'],
+            "workflow_id"           => $refMetaReq['workflowId'],
+            "doc_upload_status"     => $refApplication->doc_upload_status,
+            "is_doc"                => $refApplication->is_doc,
+            "apply_date"            => $refApplication->apply_date,
+            "other_info"            => $refApplication->other_info,
+            "user_id"               => $refApplication->user_id,
+            "user_type"             => $refApplication->user_type,
+            "user_apply_through"    => $refApplication->user_apply_through,
+            "agency_approved_by"    => $refApplication->agency_approved_by,
+            "agency_approve_date"   => $refApplication->agency_approve_date,
+            "wf_send_by"            => $refMetaReq['userId'],
+            "wf_send_by_role"       => $refMetaReq['senderRoleId'],
+            "wf_send_by_date"       => $now,
+            "reopen_count"          => $refApplication->reopen_count,
+            "parent_wf_id"          => $refApplication->workflow_id,
+        ]);
+    }
+
+    /**
+     * | Update the Parent application 
+     */
+    public function updateParentAppForInnerWf($request, $wfDatabaseDetial, $refUlbWorkflowId, $refMetaReq)
+    {
+        DB::table($wfDatabaseDetial['databaseType'])
+            ->where($wfDatabaseDetial['databaseType'] . '.id', $request->applicationId)
+            ->where($wfDatabaseDetial['databaseType'] . '.status', 1)
+            ->update([
+                'in_inner_workflow'     => true,
+                'inner_workflow_id'     => $refUlbWorkflowId,
+                'inner_wf_current_role' => $refMetaReq['initiatorRoleId']
+            ]);
+    }
 }

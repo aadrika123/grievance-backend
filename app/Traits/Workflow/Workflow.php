@@ -253,4 +253,16 @@ trait Workflow
             ->where('wf_workflows.id', $ulbWorkflowId)
             ->orderByDesc('wf_masters.id');
     }
+
+    /**
+     * | Get workflow according to module and workflow master Id
+     */
+    public function getWorkflowByModule($workflowMasterId, $moduleId)
+    {
+        return WfMaster::select('wf_masters.*')
+            ->join('module_masters', 'module_masters.id', 'wf_masters.module_id')
+            ->where('wf_masters.id', $workflowMasterId)
+            ->where('module_masters.id', $moduleId)
+            ->first();
+    }
 }

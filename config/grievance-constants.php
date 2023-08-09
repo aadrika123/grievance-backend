@@ -14,8 +14,8 @@ return [
         "associated_grievance_active_applicantions"     => 36,
     ],
     "WF_REJECTED_DATABASE" => [
-        "grievance_rejected_applicantions" => 34,
-        "associated_grievance_rejected_applicantions" => 36
+        "grievance_rejected_applicantions"              => 34,
+        "associated_grievance_rejected_applicantions"   => 36
     ],
     "DB_NAME" => [
         "P_GRIEVANCE"       => "grievance_active_applicantions",

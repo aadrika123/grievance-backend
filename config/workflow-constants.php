@@ -7,7 +7,7 @@
 
 return [
     "GRIEVANCE_WF_MASTER_ID" => 34,
-    "GRIEVANCE_MODULE_ID" => 11,
+    "GRIEVANCE_MODULE_ID" => 13,
     "GRIVANCE_ROLE_LEVEL" => [
         "DA"    => 6,
         "BO"    => 11,

@@ -43,6 +43,8 @@ Route::controller(GrievanceController::class)->group(function () {
     Route::post('search-grievance-for-agency', 'searchGrievanceForAgency');             // w
     Route::post('auth/get-grievance-by-mobileno', 'getGrievanceByMobileNo');            // uc
     Route::post('auth/view-grievance-full-details', 'viewGrievanceDetails');            // uc
+    Route::post('get-wf-solved-grievance', 'getWfApprovedGrievances');                  // w
+    Route::post('get-wf-rejected-grievance','getWfRejectedGrievances');                 // uc
 
     # Parent workflow api 
     Route::post('wf/send-application-to-wf', 'sendApplicationToWf');                    // uc
@@ -61,6 +63,5 @@ Route::controller(GrievanceController::class)->group(function () {
     # Associated workflow
     Route::post('awf/post-next-level', 'awfPostNextLevel');                             // uc
     Route::post('awf/verify-reject-doc', 'awfVerifyRejectDocs');                        // uc
-    Route::post('awf/approve-reject-applications', 'approvalRejectionAssociatedWf');    // uc
-    Route::post('awf/post-associated-wf', 'awfPostAssociatedWf');                       // uc           
+    Route::post('awf/approve-reject-applications', 'approvalRejectionAssociatedWf');    // uc       
 });
