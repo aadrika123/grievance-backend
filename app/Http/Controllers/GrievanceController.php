@@ -7,6 +7,7 @@ use App\MicroServices\DocUpload;
 use App\MicroServices\IdGeneration;
 use App\Models\Grievance\GrievanceActiveApplicantion;
 use App\Models\Grievance\GrievanceApprovedApplicantion;
+use App\Models\Grievance\GrievanceClosedApplicantion;
 use App\Models\Grievance\GrievanceRejectedApplicantion;
 use App\Models\Grievance\GrievanceSolvedApplicantion;
 use App\Models\ThirdParty\OtpRequest;
@@ -59,6 +60,7 @@ class GrievanceController extends Controller
     private $_applythrough;
     private $_wfRejectedDatabase;
     private $_condition;
+    private $_solvedStatus;
 
     public function __construct()
     {
@@ -76,6 +78,7 @@ class GrievanceController extends Controller
         $this->_applythrough        = Config::get('grievance-constants.APPLY_THROUGH');
         $this->_wfRejectedDatabase  = Config::get('grievance-constants.WF_REJECTED_DATABASE');
         $this->_condition           = Config::get('grievance-constants.CONDITION');
+        $this->_solvedStatus        = Config::get('grievance-constants.SOLVED_STATUS');
     }
 
 
@@ -253,12 +256,13 @@ class GrievanceController extends Controller
 
             # Send Message behalf of registration
             $watsAppMessge = (Whatsapp_Send(
-                "",
-                "trn_2_var",
+                "$request->mobileNo",
+                "register_message",                     // Set at env or database
                 [
                     "conten_type" => "text",
                     [
                         $request->applicantName,
+                        "Grievance",
                         $applicationNo,
                     ]
                 ]
@@ -1300,6 +1304,7 @@ class GrievanceController extends Controller
     public function getGrievanceForAgency(Request $request)
     {
         try {
+            $msg = "listed Grievances!";
             $workflowMstId = $this->_workflowMstId;
             $moduleId = $this->_moduleId;
             $user = authUser($request);
@@ -1314,7 +1319,10 @@ class GrievanceController extends Controller
                 )
                 ->whereNull('current_role')
                 ->get();
-            return responseMsgs(true, "listed Grievances!", remove_null($listedetails), "", "01", responseTime(), "POST", $request->deviceId);
+            if (!collect($listedetails)->first()) {
+                $msg = "Data not found!";
+            }
+            return responseMsgs(true, $msg, remove_null($listedetails), "", "01", responseTime(), "POST", $request->deviceId);
         } catch (Exception $e) {
             return responseMsgs(false, $e->getMessage(), [], "", "01", responseTime(), "POST", $request->deviceId);
         }
@@ -1934,6 +1942,170 @@ class GrievanceController extends Controller
                 $msg = "Data not found!";
             }
             return responseMsgs(true, $msg, remove_null($rejectedGrievance), '', "01", responseTime(), "POST", $request->deviceId);
+        } catch (Exception $e) {
+            return responseMsgs(false, $e->getMessage(), [], "", "01", responseTime(), "POST", $request->deviceId);
+        }
+    }
+
+
+    /**
+     * | Get the grievance detials according to application id and condition
+        | Serial No : 
+        | Under con
+        | Not tested
+     */
+    public function viewGrievanceFullDetails(Request $request)
+    {
+        $validated  = Validator::make(
+            $request->all(),
+            [
+                'id'        => 'required|',
+                'condition' => 'required|in:1,0',
+            ]
+        );
+        if ($validated->fails())
+            return validationError($validated);
+        try {
+            $msg        = "Data of grievance!";
+            $moduleId   = $this->_moduleId;
+            $condition  = $request->condition;
+            $mGrievanceSolvedApplicantion   = new GrievanceSolvedApplicantion();
+            $mGrievanceRejectedApplicantion = new GrievanceRejectedApplicantion();
+            switch ($request->condition) {
+                case (1):
+                    $returnData = $mGrievanceSolvedApplicantion->getSolvedGriavanceDetails($moduleId)
+                        ->selectRaw(
+                            DB::raw("'$condition' as active_status"),
+                        )
+                        ->where('grievance_solved_applicantions.id', $request->id)
+                        ->first();
+                    break;
+
+                case (0):
+                    $returnData = $mGrievanceRejectedApplicantion->rejectedGrievanceFullDetails($moduleId)
+                        ->selectRaw(
+                            DB::raw("'$condition' as active_status")
+                        )
+                        ->where('grievance_rejected_applicantions.id', $request->id)
+                        ->first();
+                    break;
+            }
+            if (!$returnData) {
+                $msg = "Data not found!";
+            }
+            return responseMsgs(true, $msg, remove_null($returnData), "", "01", responseTime(), "POST", $request->deviceId);
+        } catch (Exception $e) {
+            return responseMsgs(false, $e->getMessage(), [], "", "01", responseTime(), "POST", $request->deviceId);
+        }
+    }
+
+    /**
+     * | Agency final Close and reopen the process
+        | Serial No :
+        | Working
+        | Check condition for Closer of Grievance
+     */
+    public function agencyFinalCloser(Request $request)
+    {
+        $validated  = Validator::make(
+            $request->all(),
+            [
+                'id' => 'required|',
+                'rank' => "nullable|integer|in:1,2,3,4,5,6,7,8,9,10"
+            ]
+        );
+        if ($validated->fails())
+            return validationError($validated);
+
+        try {
+            $status                         = $this->_solvedStatus;
+            $solvedApplicationId            = $request->id;
+            $user                           = authUser($request);
+            $mGrievanceSolvedApplicantion   = new GrievanceSolvedApplicantion();
+            $mGrievanceClosedApplicantion   = new GrievanceClosedApplicantion();
+            $solvedGrievanceDetails         = $mGrievanceSolvedApplicantion->getSolvedGrievance($solvedApplicationId)->where('status', 1)->first();
+            if (!$solvedGrievanceDetails) {
+                throw new Exception("Application detial not found!");
+            }
+            $request->merge([
+                'workflowId'    => $solvedGrievanceDetails->workflow_id,
+                'userId'        => $user->id
+            ]);
+            $roleDetails = $this->getRole($request);
+            if (!$roleDetails) {
+                throw new Exception("Role details not found!");
+            }
+            $this->checkParamForAgncyCloser($request, $solvedGrievanceDetails, $roleDetails);
+            DB::beginTransaction();
+            # Save the Solved application detial in the Closer database and update the solved application status '2' to make it closed
+            $mGrievanceClosedApplicantion->saveClosedGrievance($solvedGrievanceDetails, $request);
+            $mGrievanceSolvedApplicantion->updateStatus($solvedApplicationId, $status['CLOSED']);
+            DB::commit();
+            return responseMsgs(true, "Grievance Closed successfully!", [], "", "02", responseTime(), "POST", $request->deviceId);
+        } catch (Exception $e) {
+            DB::rollBack();
+            return responseMsgs(false, $e->getMessage(), [], "", "01", responseTime(), "POST", $request->deviceId);
+        }
+    }
+
+    /**
+     * | Check param for final closer of grievance from agrncy
+        | Serial No :
+        | Under Con
+     */
+    public function checkParamForAgncyCloser($request, $solvedGrievanceDetails, $roleDetails)
+    {
+        $mGrievanceClosedApplicantion = new GrievanceClosedApplicantion();
+        if ($solvedGrievanceDetails->current_role != $solvedGrievanceDetails->finisher_id) {
+            throw new Exception("Process was not completed by the finisher!");
+        };
+        if ($solvedGrievanceDetails->in_inner_workflow == true) {
+            throw new Exception("Error.. application is under inner workflow!");
+        }
+
+        $isClosedData = $mGrievanceClosedApplicantion->getClosedGrievnaceByRefId($solvedGrievanceDetails->id)->where('status', 1)->first();
+        if ($isClosedData) {
+            throw new Exception("Grievance Already Closed!");
+        }
+    }
+
+    /**
+     * | Grievance reopen process from and the agency
+        | Serial No :
+        | Under Con
+     */
+    public function grievanceReopen(Request $request)
+    {
+        $validated  = Validator::make(
+            $request->all(),
+            [
+                'id' => 'required|',
+                'condition' => 'required|in:1,0,2'    // 1:solved, 0:pending, 2:closed
+            ]
+        );
+        if ($validated->fails())
+            return validationError($validated);
+
+        try {
+            $id = $request->id;
+            $user = authUser($request);
+            $mGrievanceSolvedApplicantion = new GrievanceSolvedApplicantion();
+            $mGrievanceRejectedApplicantion = new GrievanceRejectedApplicantion();
+            $mGrievanceClosedApplicantion = new GrievanceClosedApplicantion();
+
+            switch ($request->condition) {
+                case (1):
+                    $application = $mGrievanceSolvedApplicantion->getSolvedGrievance($id)->where('status', 1)->first();
+                    break;
+
+                case (0):
+                    # code...
+                    break;
+
+                case (2):
+                    # code...
+                    break;
+            }
         } catch (Exception $e) {
             return responseMsgs(false, $e->getMessage(), [], "", "01", responseTime(), "POST", $request->deviceId);
         }

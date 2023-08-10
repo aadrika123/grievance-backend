@@ -5,6 +5,7 @@ namespace App\Models\Grievance;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
 
 class GrievanceSolvedApplicantion extends Model
 {
@@ -89,5 +90,56 @@ class GrievanceSolvedApplicantion extends Model
             ->join('ulb_masters', 'ulb_masters.id', '=', 'grievance_solved_applicantions.ulb_id')
             ->where('grievance_solved_applicantions.status', 1)
             ->orderByDesc('id');
+    }
+
+    /**
+     * | 
+     */
+    public function getSolvedGriavanceDetails($moduleId)
+    {
+        return GrievanceSolvedApplicantion::select(
+            'grievance_solved_applicantions.id',
+            'grievance_solved_applicantions.mobile_no',
+            'grievance_solved_applicantions.applicant_name',
+            'grievance_solved_applicantions.application_no',
+            'grievance_solved_applicantions.apply_date',
+            'grievance_solved_applicantions.user_apply_through',
+            'grievance_solved_applicantions.workflow_id',
+            'ulb_masters.ulb_name',
+            'ulb_ward_masters.ward_name',
+            'm_grievance_apply_through.apply_through_name',
+            DB::raw("CONCAT('" . config('app.url') . "', '/', wf_active_documents.relative_path, '/', wf_active_documents.document) as full_url")
+        )
+            ->join('wf_active_documents', 'wf_active_documents.active_id', 'grievance_solved_applicantions.application_id')
+            ->join('m_grievance_apply_through', 'm_grievance_apply_through.id', 'grievance_solved_applicantions.user_apply_through')
+            ->join('ulb_masters', 'ulb_masters.id', '=', 'grievance_solved_applicantions.ulb_id')
+            ->join('ulb_ward_masters', 'ulb_ward_masters.id', '=', 'grievance_solved_applicantions.ward_id')
+
+            ->where('grievance_solved_applicantions.status', 1)
+            ->where('in_inner_workflow', false)
+            ->whereColumn('wf_active_documents.ulb_id', 'grievance_solved_applicantions.ulb_id')
+            ->where('wf_active_documents.module_id', $moduleId)
+            ->whereColumn('wf_active_documents.workflow_id', 'grievance_solved_applicantions.workflow_id')
+            ->where('wf_active_documents.status', 1)
+            ->orderByDesc('grievance_solved_applicantions.id');
+    }
+
+    /**
+     * | Get solved grievance according to id
+     */
+    public function getSolvedGrievance($id)
+    {
+        return GrievanceSolvedApplicantion::where('id', $id);
+    }
+
+    /**
+     * | Update the Status 
+     */
+    public function updateStatus($id, $status)
+    {
+        GrievanceSolvedApplicantion::where('id', $id)
+            ->update([
+                "status" => $status
+            ]);
     }
 }

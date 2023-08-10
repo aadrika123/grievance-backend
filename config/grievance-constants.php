@@ -56,4 +56,10 @@ return [
         "ACTIVE"    => 1,
         "REJECTED"  => 0
     ],
+
+    "SOLVED_STATUS" => [
+        "ACTIVE"    => 1,
+        "DEACTIVE"  => 0,
+        "CLOSED"    => 2
+    ],
 ];
