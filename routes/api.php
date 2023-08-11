@@ -46,7 +46,8 @@ Route::controller(GrievanceController::class)->group(function () {
     Route::post('get-wf-solved-grievance', 'getWfApprovedGrievances');                  // w
     Route::post('get-wf-rejected-grievance', 'getWfRejectedGrievances');                // uc
     Route::post('view-grievance-full-details', 'viewGrievanceFullDetails');             // w
-    Route::post('close-grievance-by-agency', 'agencyFinalCloser');                      //
+    Route::post('close-grievance-by-agency', 'agencyFinalCloser');                      // uc
+    Route::post('agency-reopen-grievance', 'grievanceReopen');                          // uc
 
     # Parent workflow api 
     Route::post('wf/send-application-to-wf', 'sendApplicationToWf');                    // uc

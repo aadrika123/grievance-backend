@@ -9,6 +9,7 @@ use App\Models\Grievance\GrievanceActiveApplicantion;
 use App\Models\Grievance\GrievanceApprovedApplicantion;
 use App\Models\Grievance\GrievanceClosedApplicantion;
 use App\Models\Grievance\GrievanceRejectedApplicantion;
+use App\Models\Grievance\GrievanceReopenApplicantionDetail;
 use App\Models\Grievance\GrievanceSolvedApplicantion;
 use App\Models\ThirdParty\OtpRequest;
 use App\Models\ThirdParty\RefRequiredDocument;
@@ -195,7 +196,7 @@ class GrievanceController extends Controller
             }
 
             DB::beginTransaction();
-            $applicationNo  = "GRE" . Str::random(10);          // Use the id generation service
+            $applicationNo  = "GRE" . Str::random(10) . Str::random(2);          // Use the id generation service
             $document       = $request->document;
             if ($document) {
                 $imageName  = $docUpload->upload($refImageName['GRIEVANCE_APPLY'], $document, $refRelativePath['1']);
@@ -2010,8 +2011,9 @@ class GrievanceController extends Controller
         $validated  = Validator::make(
             $request->all(),
             [
-                'id' => 'required|',
-                'rank' => "nullable|integer|in:1,2,3,4,5,6,7,8,9,10"
+                'id'        => 'required|',
+                'remarks'   => 'required',
+                'rank'      => "nullable|integer|in:1,2,3,4,5,6,7,8,9,10"
             ]
         );
         if ($validated->fails())
@@ -2071,42 +2073,88 @@ class GrievanceController extends Controller
 
     /**
      * | Grievance reopen process from and the agency
-        | Serial No :
+        | Serial No : 0 
         | Under Con
+        | check the param for reopen
      */
     public function grievanceReopen(Request $request)
     {
         $validated  = Validator::make(
             $request->all(),
             [
-                'id' => 'required|',
-                'condition' => 'required|in:1,0,2'    // 1:solved, 0:pending, 2:closed
+                'id'        => 'required|',
+                'reason'    => 'nullable',
+                'remarks'   => 'required'
             ]
         );
         if ($validated->fails())
             return validationError($validated);
 
         try {
-            $id = $request->id;
-            $user = authUser($request);
-            $mGrievanceSolvedApplicantion = new GrievanceSolvedApplicantion();
-            $mGrievanceRejectedApplicantion = new GrievanceRejectedApplicantion();
-            $mGrievanceClosedApplicantion = new GrievanceClosedApplicantion();
+            $status     = $this->_solvedStatus;
+            $id         = $request->id;
+            $user       = authUser($request);
+            $moduleId   = $this->_moduleId;
 
-            switch ($request->condition) {
-                case (1):
-                    $application = $mGrievanceSolvedApplicantion->getSolvedGrievance($id)->where('status', 1)->first();
-                    break;
+            $mGrievanceSolvedApplicantion       = new GrievanceSolvedApplicantion();
+            $mGrievanceActiveApplicantion       = new GrievanceActiveApplicantion();
+            $mGrievanceReopenApplicantionDetail = new GrievanceReopenApplicantionDetail();
+            $mWfActiveDocument                  = new WfActiveDocument();
 
-                case (0):
-                    # code...
-                    break;
-
-                case (2):
-                    # code...
-                    break;
+            $applicationDetails = $mGrievanceSolvedApplicantion->getSolvedGrievance($id)->where('status', 1)->first();
+            if (!$applicationDetails) {
+                throw new Exception("Application data not found!");
             }
+
+            DB::beginTransaction();
+            $applicationNo  = "GRE" . Str::random(10) . "RE";
+            $refRequest = [
+                "applicationNo"     => $applicationNo,
+                "initiatorRoleId"   => $applicationDetails->initiator_id,
+                "finisherRoleId"    => $applicationDetails->finisher_id,
+                "workflowId"        => $applicationDetails->workflow_id,
+                "userId"            => $user->id,
+                "userType"          => $user->user_type,
+                "reopenCount"       => $applicationDetails->reopen_count + 1
+
+            ];
+            $refDetails = new Request([
+                "mobileNo"      => $applicationDetails->mobile_no,
+                "email"         => $applicationDetails->email,
+                "applicantName" => $applicationDetails->applicant_name,
+                "aadhar"        => $applicationDetails->uid,
+                "description"   => $applicationDetails->description,
+                "grievanceHead" => $applicationDetails->grievance_head,
+                "department"    => $applicationDetails->department,
+                "gender"        => $applicationDetails->gender,
+                "disability"    => $applicationDetails->disability,
+                "address"       => $applicationDetails->address,
+                "districtId"    => $applicationDetails->district_id,
+                "ulbId"         => $applicationDetails->ulb_id,
+                "wardId"        => $applicationDetails->ward_id,
+                "otherInfo"     => $applicationDetails->other_info,
+                "applyThrough"  => $applicationDetails->user_apply_through,
+                "isDoc"         => $applicationDetails->is_doc
+
+            ]);
+            $docRequest = new Request([
+                "oldActiveId"   => $applicationDetails->application_id,
+                "workflowId"    => $applicationDetails->workflow_id,
+                "ulbId"         => $applicationDetails->ulb_id,
+                "moduleId"      => $moduleId
+            ]);
+            $newGrievanceDetails = $mGrievanceActiveApplicantion->saveGrievanceDetails($refDetails, $refRequest);
+            $mGrievanceReopenApplicantionDetail->saveReopenDetails($request, $applicationDetails, $applicationNo);
+            $mGrievanceSolvedApplicantion->updateStatus($applicationDetails->id, $status['REOPEN']);
+            $mWfActiveDocument->updateActiveIdOfDoc($docRequest, $newGrievanceDetails['id']);
+            DB::commit();
+            $returnDetails = [
+                "applicationNo" => $applicationNo
+            ];
+            # Send Whatsapp message
+            return responseMsgs(true, "Grievacne successfully reopened!", $returnDetails, "", "02", responseTime(), "POST", $request->deviceId);
         } catch (Exception $e) {
+            DB::rollBack();
             return responseMsgs(false, $e->getMessage(), [], "", "01", responseTime(), "POST", $request->deviceId);
         }
     }

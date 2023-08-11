@@ -130,4 +130,18 @@ class WfActiveDocument extends Model
         $document = WfActiveDocument::find($id);
         $document->update($req);
     }
+
+    /**
+     * | Update the active id of the document 
+     */
+    public function updateActiveIdOfDoc($refRequest, $activeId)
+    {
+        WfActiveDocument::where('active_id', $refRequest->oldActiveId)
+            ->where('workflow_id', $refRequest->workflowId)
+            ->where('ulb_id', $refRequest->ulbId)
+            ->where('module_id', $refRequest->moduleId)
+            ->update([
+                "active_id" => $activeId
+            ]);
+    }
 }

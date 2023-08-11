@@ -60,6 +60,7 @@ return [
     "SOLVED_STATUS" => [
         "ACTIVE"    => 1,
         "DEACTIVE"  => 0,
-        "CLOSED"    => 2
+        "CLOSED"    => 2,
+        "REOPEN"    => 3
     ],
 ];

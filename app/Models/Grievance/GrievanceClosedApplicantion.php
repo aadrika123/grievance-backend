@@ -64,6 +64,7 @@ class GrievanceClosedApplicantion extends Model
         $mGrievanceClosedApplicantion->agency_closed_date       = $now;
         $mGrievanceClosedApplicantion->agency_closed_rank       = $request->rank ?? 1;
         $mGrievanceClosedApplicantion->ref_solved_id            = $solvedGrievanceDetails->id;
+        $mGrievanceClosedApplicantion->agency_closed_remarks    = $request->remarks;
         $mGrievanceClosedApplicantion->save();
     }
 
@@ -72,6 +73,6 @@ class GrievanceClosedApplicantion extends Model
      */
     public function getClosedGrievnaceByRefId($solvedId)
     {
-        return GrievanceClosedApplicantion::where('ref_solved_id',$solvedId);
+        return GrievanceClosedApplicantion::where('ref_solved_id', $solvedId);
     }
 }
