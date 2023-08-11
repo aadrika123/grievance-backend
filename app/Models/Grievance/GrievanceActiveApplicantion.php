@@ -42,7 +42,7 @@ class GrievanceActiveApplicantion extends Model
         $mGrievanceActiveApplicantion->user_id              = $refRequest['userId'];
         $mGrievanceActiveApplicantion->user_type            = $refRequest['userType'];
         $mGrievanceActiveApplicantion->reopen_count         = $refRequest['initiatorRoleId'] ?? 0;
-        $mGrievanceActiveApplicantion->save();
+        $mGrievanceActiveApplicantion->current_role         = $$mGrievanceActiveApplicantion->save();
         return [
             "id" => $mGrievanceActiveApplicantion->id,
         ];
@@ -242,5 +242,24 @@ class GrievanceActiveApplicantion extends Model
                 'inner_workflow_id'     => $refUlbWorkflowId,
                 'inner_wf_current_role' => $refMetaReq['initiatorRoleId']
             ]);
+    }
+
+    /**
+     * | Save the agency edited data in the citizen application
+     */
+    public function editCitizenGrievance($request)
+    {
+        $mGrievanceActiveApplicantion = GrievanceActiveApplicantion::findorfail($request->id);
+        $mGrievanceActiveApplicantion->mobile_no      =  $request->mobileNo      ?? $mGrievanceActiveApplicantion->mobile_no;
+        $mGrievanceActiveApplicantion->email          =  $request->email         ?? $mGrievanceActiveApplicantion->email;
+        $mGrievanceActiveApplicantion->applicant_name =  $request->applicantName ?? $mGrievanceActiveApplicantion->applicant_name;
+        $mGrievanceActiveApplicantion->uid            =  $request->uid           ?? $mGrievanceActiveApplicantion->uid;
+        $mGrievanceActiveApplicantion->description    =  $request->description   ?? $mGrievanceActiveApplicantion->description;
+        $mGrievanceActiveApplicantion->grievance_head =  $request->grievanceHead ?? $mGrievanceActiveApplicantion->grievance_head;
+        $mGrievanceActiveApplicantion->department     =  $request->department    ?? $mGrievanceActiveApplicantion->department;
+        $mGrievanceActiveApplicantion->gender         =  $request->gender        ?? $mGrievanceActiveApplicantion->gender;
+        $mGrievanceActiveApplicantion->disability     =  $request->disability    ?? $mGrievanceActiveApplicantion->disability;
+        $mGrievanceActiveApplicantion->address        =  $request->address       ?? $mGrievanceActiveApplicantion->address;
+        $mGrievanceActiveApplicantion->save();
     }
 }

@@ -48,6 +48,7 @@ Route::controller(GrievanceController::class)->group(function () {
     Route::post('view-grievance-full-details', 'viewGrievanceFullDetails');             // w
     Route::post('close-grievance-by-agency', 'agencyFinalCloser');                      // uc
     Route::post('agency-reopen-grievance', 'grievanceReopen');                          // uc
+    Route::post('update-citzen-grievance', 'updateCitizenGrievance');                   // uc
 
     # Parent workflow api 
     Route::post('wf/send-application-to-wf', 'sendApplicationToWf');                    // uc

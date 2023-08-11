@@ -2158,4 +2158,59 @@ class GrievanceController extends Controller
             return responseMsgs(false, $e->getMessage(), [], "", "01", responseTime(), "POST", $request->deviceId);
         }
     }
+
+
+    /**
+     * | Edit the application detials by the agency before sending it in workflow
+        | Serial No : 0
+        | Under Con
+        | Check params for updating the grievance applications
+     */
+    public function updateCitizenGrievance(Request $request)
+    {
+        $validated = Validator::make(
+            $request->all(),
+            [
+                'id'            => 'required|integer',
+                'mobileNo'      => 'nullable|',
+                'email'         => 'nullable|email',
+                'applicantName' => 'nullable|',
+                'uid'           => 'nullable|integer|digits:12',
+                'description'   => 'nullable|',
+                'grievanceHead' => 'nullable|integer',
+                'department'    => 'nullable|integer',
+                'gender'        => 'nullable|in:male,female',
+                'disability'    => 'nullable|in:true,false',
+                'address'       => 'nullable|',
+            ]
+        );
+        if ($validated->fails())
+            return validationError($validated);
+
+        try {
+            $now            = Carbon::now();
+            $user           = authUser($request);
+            $applicationId  = $request->id;
+
+            $mGrievanceActiveApplication = new GrievanceActiveApplicantion();
+            $applicationDtls = $mGrievanceActiveApplication->getActiveGrievanceById($applicationId)->whereNull('current_role')->first();
+            if (!$applicationDtls) {
+                throw new Exception("Application details not found!");
+            }
+
+            DB::beginTransaction();
+            $logDtls = $applicationDtls->replicate();
+            $logDtls->setTable('log_grievance_active_applications');
+            $logDtls->edited_by = $user->id;
+            $logDtls->edited_date = $now;
+            $logDtls->application_id = $applicationDtls->id;
+            $logDtls->save();
+            $mGrievanceActiveApplication->editCitizenGrievance($request);
+            DB::commit();
+            return responseMsgs(true, "Data Updated", [], "", "02", responseTime(), $request->getMethod(), $request->deviceId);
+        } catch (Exception $e) {
+            DB::rollBack();
+            return responseMsgs(false, $e->getMessage(), [], "", "02", responseTime(), $request->getMethod(), $request->deviceId);
+        }
+    }
 }
