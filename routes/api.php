@@ -33,7 +33,8 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 Route::controller(GrievanceController::class)->group(function () {
     Route::get('ping', 'pong');                                                         // r
     # Citizen and Agency                                                           
-    Route::post('register-grievance', 'registerGrievance');                             // w     
+    Route::post('register-grievance', 'registerGrievance');                             // w 
+    Route::post('reg/register-grievance', 'registerGrievance');
     Route::post('auth/req-otp', 'requestOtp');                                          // w / unauth
     Route::post('auth/verify-otp', 'verifyOtp');                                        // w / unauth
     Route::post('auth/get-grievance', 'getAppliedGrievance');                           // w / unauth
