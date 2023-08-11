@@ -42,7 +42,7 @@ class GrievanceActiveApplicantion extends Model
         $mGrievanceActiveApplicantion->user_id              = $refRequest['userId'];
         $mGrievanceActiveApplicantion->user_type            = $refRequest['userType'];
         $mGrievanceActiveApplicantion->reopen_count         = $refRequest['initiatorRoleId'] ?? 0;
-        $mGrievanceActiveApplicantion->current_role         = $$mGrievanceActiveApplicantion->save();
+        $mGrievanceActiveApplicantion->current_role         = $mGrievanceActiveApplicantion->save();
         return [
             "id" => $mGrievanceActiveApplicantion->id,
         ];
@@ -262,4 +262,14 @@ class GrievanceActiveApplicantion extends Model
         $mGrievanceActiveApplicantion->address        =  $request->address       ?? $mGrievanceActiveApplicantion->address;
         $mGrievanceActiveApplicantion->save();
     }
+
+    /**
+     * | Update the parent Wf inner worflow status
+        | Use the application id
+     */
+    public function updateWfParent($applicationNo)
+    {
+        // GrievanceReopenApplicantionDetail
+    }
+
 }

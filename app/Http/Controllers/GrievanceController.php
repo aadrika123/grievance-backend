@@ -1864,7 +1864,7 @@ class GrievanceController extends Controller
             "workflowId" => $applicationDetails->workflow_id
         ]);
         $roleDetails = $this->getRole($request);
-        if (!$roleDetails) {
+        if (!collect($roleDetails)->first()) {
             throw new Exception("Respective user dont have any role in the workflow!");
         }
         if ($roleDetails['wf_role_id'] != $applicationDetails->current_role) {
@@ -2208,6 +2208,51 @@ class GrievanceController extends Controller
             $mGrievanceActiveApplication->editCitizenGrievance($request);
             DB::commit();
             return responseMsgs(true, "Data Updated", [], "", "02", responseTime(), $request->getMethod(), $request->deviceId);
+        } catch (Exception $e) {
+            DB::rollBack();
+            return responseMsgs(false, $e->getMessage(), [], "", "02", responseTime(), $request->getMethod(), $request->deviceId);
+        }
+    }
+
+
+    /**
+     * | Post the grievance from inner workflow to parent workflow
+        | Serial No :
+        | Under Con
+     */
+    public function sendApplicationToParentWf(Request $request)
+    {
+        $validated = Validator::make(
+            $request->all(),
+            [
+                'applicationId'     => 'required|integer',
+                'ulbWorkflowId'     => 'required|'
+            ]
+        );
+        if ($validated->fails())
+            return validationError($validated);
+        try {
+            $user                           = authUser($request);
+            $confDatabase                   = $this->_wfDatabase;
+            $current                        = Carbon::now();
+            $mWorkflowTrack                 = new WorkflowTrack();
+            $mWfWorkflow                    = new WfWorkflow();
+            $mGrievanceActiveApplicantion   = new GrievanceActiveApplicantion();
+            $wfDatabaseDetial               = $this->checkRoleWorkflow($request);
+            $applicationDetails             = $mGrievanceActiveApplicantion->getGrievanceFullDetails($request->applicationId, $wfDatabaseDetial['databaseType'])->first();
+            // $wfApplicationDetails           = $this->checkApplication($request, $applicationDetails);
+
+            $refParentUlbWorkflowId = $applicationDetails->parent_wf_id;
+            $refDbName              = collect($confDatabase)->flip();
+            $workflowMasterId       = $wfDatabaseDetial['workflowMasterId'];
+            $parentWfmasteId        = $this->getWorkflowMstId($refParentUlbWorkflowId)->first();
+            $associatedDatabase     = $refDbName[$parentWfmasteId->id];
+
+            DB::beginTransaction();
+            // $mGrievanceActiveApplicantion->updateWfParent($applicationDetails['application_no']);
+            // $mGrievanceActiveApplicantion->updateAssociated
+            DB::commit();
+            return "working";
         } catch (Exception $e) {
             DB::rollBack();
             return responseMsgs(false, $e->getMessage(), [], "", "02", responseTime(), $request->getMethod(), $request->deviceId);
