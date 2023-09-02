@@ -96,7 +96,6 @@ class GrievanceActiveApplicantion extends Model
     {
         return DB::table($database)
             ->select($database . '.*', 'ulb_masters.ulb_name', 'ulb_ward_masters.ward_name')
-            // ->leftJoin('wf_roles', 'wf_roles.id', '=', $database . '.current_role')
             ->join('ulb_ward_masters', 'ulb_ward_masters.id', '=', $database . '.ward_id')
             ->join('ulb_masters', 'ulb_masters.id', '=', $database . '.ulb_id')
             ->where($database . '.id', $applicationId)
@@ -227,6 +226,7 @@ class GrievanceActiveApplicantion extends Model
             "reopen_count"          => $refApplication->reopen_count,
             "parent_wf_id"          => $refApplication->workflow_id,
         ]);
+        return DB::getPdo()->lastInsertId();
     }
 
     /**
@@ -269,7 +269,34 @@ class GrievanceActiveApplicantion extends Model
      */
     public function updateWfParent($applicationNo)
     {
-        // GrievanceReopenApplicantionDetail
+        GrievanceActiveApplicantion::where('application_no', $applicationNo)
+            ->where('in_inner_workflow', true)
+            ->where('status', 1)
+            ->update([
+                "in_inner_workflow" => false,
+                "inner_workflow_id" => null
+            ]);
     }
 
+    /**
+     * | Save the associated wf status for back to parent workflow
+        | Check
+     */
+    public function updateAssociatedDbStatus($database, $request)
+    {
+        return DB::table($database)
+            ->where($database . '.id', $request->applicationId)
+            ->where($database . '.status', 1)
+            ->update([
+                "status" => $request->status
+            ]);
+    }
+
+    /**
+     * | Save update the role details for wf and the awf
+     */
+    public function updateDatabaseDetails($applicationId, $wfDatabaseType, $metaData)
+    {
+        DB::table($wfDatabaseType)->where('id', $applicationId)->update($metaData);
+    }
 }

@@ -11,6 +11,8 @@ use App\Models\Grievance\GrievanceClosedApplicantion;
 use App\Models\Grievance\GrievanceRejectedApplicantion;
 use App\Models\Grievance\GrievanceReopenApplicantionDetail;
 use App\Models\Grievance\GrievanceSolvedApplicantion;
+use App\Models\Grievance\MGrievanceApplyThrough;
+use App\Models\Grievance\MGrievanceHead;
 use App\Models\ThirdParty\OtpRequest;
 use App\Models\ThirdParty\RefRequiredDocument;
 use App\Models\ThirdParty\WfActiveDocument;
@@ -160,6 +162,7 @@ class GrievanceController extends Controller
         | Serial No : 03
         | Working / But the validation is creating problem
         | Check the agency and the citizen apply difference
+        | Return the whastapp message alse
      */
     public function registerGrievance(saveGrievanceReq $request)
     {
@@ -258,19 +261,20 @@ class GrievanceController extends Controller
             # Send Message behalf of registration
             $watsAppMessge = (Whatsapp_Send(
                 "$request->mobileNo",
-                "register_message",                     // Set at env or database
+                "register_message",                     // Set at env or database and 
                 [
                     "conten_type" => "text",
                     [
                         $request->applicantName,
-                        "Grievance",
+                        "Grievance",                    // Static
                         $applicationNo,
                     ]
                 ]
             ));
             $returnData = [
-                "applicationNo" => $applicationNo,
-                "applicationId" => $applicationDetails['id']
+                "applicationNo"     => $applicationNo,
+                "applicationId"     => $applicationDetails['id'],
+                // "whatappResponse"   => collect($watsAppMessge)
             ];
             return responseMsgs(true, "You'r Grievance is submited successfully!", $returnData, "", "01", responseTime(), "POST", $request->deviceId);
         } catch (Exception $e) {
@@ -297,8 +301,6 @@ class GrievanceController extends Controller
         }
 
         # Check diff btw user and agency
-
-
         # Check if the user is appliying through proper login 
         if (isset($user->user_type)) {
             if ($user->user_type != $confUserType['1']) {
@@ -314,17 +316,10 @@ class GrievanceController extends Controller
                     throw new Exception("You are not allowed to register Grievance!");
                 }
             }
+            if ($user->user_type == $confUserType['1']) {
+            }
         }
     }
-
-
-    /**
-     * | Send Application to wf 
-     */
-
-
-
-
 
 
     /**
@@ -361,6 +356,7 @@ class GrievanceController extends Controller
      * | Get doc list to be upload
         | Serial No : 0
         | Working
+        | Not used
      */
     public function getDocToUpload(Request $request)
     {
@@ -398,6 +394,7 @@ class GrievanceController extends Controller
      * | Get list of document
         | Serial No : 0
         | Working
+        | Not used
      */
     public function getGrievanceDocLists($application)
     {
@@ -413,6 +410,7 @@ class GrievanceController extends Controller
      * | Filter document for displaying 
         | Serial No : 0
         | Working
+        | Not used
      */
     public function filterDocument($documentList, $refWaterApplication, $ownerId = null)
     {
@@ -534,7 +532,7 @@ class GrievanceController extends Controller
      * | Inbox details 
      * | Also display the concept of inner workflow
         | Serial No : 0
-        | Not Tested
+        | Working
      */
     public function inbox(Request $request)
     {
@@ -581,7 +579,7 @@ class GrievanceController extends Controller
      * | Outbox details 
      * | Also display the concept of inner workflow
         | Serial No : 0
-        | Under cons 
+        | Working
      */
     public function outbox(Request $request)
     {
@@ -655,6 +653,7 @@ class GrievanceController extends Controller
      * | Verify the document in the workflow for the parent grievance workflow
         | Serial No : 0
         | Working
+        | Not Used
      */
     public function verifyRejectDocs(Request $request)
     {
@@ -745,6 +744,7 @@ class GrievanceController extends Controller
      * | Validate if full documet is uploaded and verified
         | Serial No : 0
         | Working
+        | Not Used
      */
     public function ifFullDocVerified($applicationId, $workflow_id)
     {
@@ -769,7 +769,7 @@ class GrievanceController extends Controller
         | Serial No : 0
         | Under Con
         | Check the user role id is in the current role id 
-        | Not Tested
+        | If receiver role id is provided then check that the following role id is in the workflow
      */
     public function postNextLevel(Request $request)
     {
@@ -778,7 +778,6 @@ class GrievanceController extends Controller
             $request->all(),
             [
                 'applicationId'     => 'required',
-                // 'senderRoleId'      => 'nullable',
                 // 'receiverRoleId'    => 'nullable',
                 'action'            => 'required|In:forward,backward',
                 'comment'           => $request->senderRoleId == $wfLevels['BO'] ? 'nullable' : 'required',
@@ -810,24 +809,21 @@ class GrievanceController extends Controller
                 'roleId'        => $senderRoleId
             ]);
             $forwardBackwardIds = $mWfRoleMaps->getWfBackForwardIds($roleMapsReqs);
-            if (!$forwardBackwardIds) {
+            if (!collect($forwardBackwardIds)->first()) {
                 throw new Exception("forward role or Backward role not found!");
             }
 
             DB::beginTransaction();
-            if ($request->action == 'forward') {                                                            // Static
-                // $this->checkPostCondition($senderRoleId, $wfLevels, $GrievanceActiveApplicantion);            // Check Post Next level condition
-                // if ($GrievanceActiveApplicantion->current_role == $wfLevels['JE']) {
-                //     $GrievanceActiveApplicantion->is_field_verified = true;
-                // }
-                $metaReqs['verificationStatus']             = 1;                                            // Static
+            if ($request->action == 'forward') {                                                                                                            // Static
+                $forwardBackwardIds->forward_role_id        = $this->checkPostForForward($request, $GrievanceActiveApplicantion, $forwardBackwardIds);      // Check Post Next to any level condition
+                $metaReqs['verificationStatus']             = 1;                                                                                            // Static
                 $metaReqs['receiverRoleId']                 = $forwardBackwardIds->forward_role_id;
                 $GrievanceActiveApplicantion->current_role  = $forwardBackwardIds->forward_role_id;
-                $GrievanceActiveApplicantion->last_role_id  = $forwardBackwardIds->forward_role_id;                                      // Update Last Role Id
+                $GrievanceActiveApplicantion->last_role_id  = $forwardBackwardIds->forward_role_id;                                                         // Update Last Role Id
 
             }
             if ($request->action == 'backward') {
-                $metaReqs['receiverRoleId']                 = $forwardBackwardIds->backward_role_id;                                                         // Static
+                $metaReqs['receiverRoleId']                 = $forwardBackwardIds->backward_role_id;                                                        // Static
                 $GrievanceActiveApplicantion->current_role  = $forwardBackwardIds->backward_role_id;
             }
             $GrievanceActiveApplicantion->save();
@@ -868,6 +864,47 @@ class GrievanceController extends Controller
             return responseMsgs(false, $e->getMessage(), [], "", "01", responseTime(), "POST", $request->deviceId);
         }
     }
+
+    /**
+     * | Check the param for the case of forward to any level
+        | Serial No : 0
+        | Under con 
+     */
+    public function checkPostForForward($request, $GrievanceActiveApplicantion, $forwardBackwardIds)
+    {
+        if (isset($request->receiverRoleId)) {
+            $request->merge([
+                "workflowId" => $GrievanceActiveApplicantion->workflow_id
+            ]);
+            $roleDetails = $this->getRole($request);
+            if (!$roleDetails) {
+                throw new Exception("Role details not found!");
+            }
+            $this->checkPostRoleCondition($roleDetails, $GrievanceActiveApplicantion);
+            return $request->receiverRoleId;
+        }
+        return $forwardBackwardIds->forward_role_id;
+    }
+
+
+    /**
+     * | Check the role related details for post to next level
+        | Serial No :
+        | Under Con 
+     */
+    public function checkPostRoleCondition($roleDetails, $GrievanceActiveApplicantion)
+    {
+        switch ($roleDetails) {
+            case ($roleDetails->allow_full_list == true):
+                throw new Exception("You are not Autherised for full listing!");
+                break;
+
+            case ($GrievanceActiveApplicantion->current_role == $roleDetails->wf_role_id):
+                throw new Exception("You are currentaly not the role owner of the application!");
+                break;
+        }
+    }
+
 
 
     /**
@@ -931,8 +968,8 @@ class GrievanceController extends Controller
      */
     public function parentGrievance($applicationDetails, $request)
     {
-        $mWorkflowMap                   = new WorkflowMap();
-        $mWorkflowTracks                = new WorkflowTrack();
+        $mWorkflowMap       = new WorkflowMap();
+        $mWorkflowTracks    = new WorkflowTrack();
 
         # Basic details
         $aplictionList = [
@@ -956,8 +993,8 @@ class GrievanceController extends Controller
         # CardArray
         $cardDetails = $this->getCardDetails($applicationDetails);
         $cardData = [
-            'headerTitle' => 'Water Connection',
-            'data' => $cardDetails
+            'headerTitle'   => 'Grievance Application Details',
+            'data'          => $cardDetails
         ];
         $fullDetailsData['fullDetailsData']['cardArray'] = new Collection($cardData);
 
@@ -1125,7 +1162,7 @@ class GrievanceController extends Controller
      * | Final Approval of the application in parent workflow
         | Serial No : 0
         | Working
-        | Recheck
+        | Recheck , Parent workflow final approval 
      */
     public function finalApprovalRejection(Request $request)
     {
@@ -1217,7 +1254,7 @@ class GrievanceController extends Controller
      * | @param activeGrievanceDetials
         | Serial No : 0
         | Working
-        | Uncomment the delete process
+        | Uncomment the delete process 
      */
     public function finalApproval($request, $approveNo, $activeGrievanceDetials)
     {
@@ -1251,7 +1288,7 @@ class GrievanceController extends Controller
         $waterTrack->saveTrack($request);
 
         # final delete
-        // $mGrievanceActiveApplicantion->deleteRecord($applicationId);
+        $mGrievanceActiveApplicantion->deleteRecord($applicationId);
         return $grievanceId;
     }
 
@@ -1292,7 +1329,7 @@ class GrievanceController extends Controller
         $waterTrack->saveTrack($request);
 
         # final delete 
-        // $mGrievanceActiveApplicantion->deleteRecord($applicationId);
+        $mGrievanceActiveApplicantion->deleteRecord($applicationId);
     }
 
 
@@ -1736,7 +1773,6 @@ class GrievanceController extends Controller
     }
 
 
-
     /**
      * | Send the application form parent workflow to the asociated workflow
      * | According to the respective role ie. wf associated to the role
@@ -1758,8 +1794,6 @@ class GrievanceController extends Controller
         try {
             $user                           = authUser($request);
             $confDatabase                   = $this->_wfDatabase;
-            $current                        = Carbon::now();
-            $mWorkflowTrack                 = new WorkflowTrack();
             $mWfWorkflow                    = new WfWorkflow();
             $mGrievanceActiveApplicantion   = new GrievanceActiveApplicantion();
             $wfDatabaseDetial               = $this->checkRoleWorkflow($request);
@@ -1792,21 +1826,12 @@ class GrievanceController extends Controller
             DB::beginTransaction();
 
             # Data base replicate
-            $mGrievanceActiveApplicantion->saveGrievanceInAssociatedWf($applicationDetails, $associatedDatabase, $refMetaReq);
+            $associatedId = $mGrievanceActiveApplicantion->saveGrievanceInAssociatedWf($applicationDetails, $associatedDatabase, $refMetaReq);
             $mGrievanceActiveApplicantion->updateParentAppForInnerWf($request, $wfDatabaseDetial, $refUlbWorkflowId, $refMetaReq);
             # Save data in track
-            $metaReqs = [
-                'moduleId'          => $this->_moduleId,
-                'workflowId'        => $applicationDetails->workflow_id,
-                'refTableDotId'     => $wfDatabaseDetial['databaseType'] . '.id',
-                'refTableIdValue'   => $applicationDetails->id,
-                'user_id'           => $user->id,
-                'senderRoleId'      => $wfApplicationDetails['roleDetails']['wf_role_id'],
-                'ulb_id'            => $user->ulb_id ?? null,
-                'trackDate'         => $current->format('Y-m-d H:i:s')
-            ];
-            $request->request->add($metaReqs);
-            $mWorkflowTrack->saveTrack($request);
+            $this->postToTrack($request, $applicationDetails->workflow_id, $applicationDetails->id, $wfDatabaseDetial['databaseType'], $user, $refMetaReq['senderRoleId'], null);
+            $this->postToTrack($request, $refUlbWorkflowId, $associatedId, $associatedDatabase, $user, $refMetaReq['senderRoleId'], $refMetaReq['initiatorRoleId']);
+
             DB::commit();
             return responseMsgs(true, "Applied Grievance is Poted To inner Wf!", [], "", "02", responseTime(), "POST", $request->deviceId);
         } catch (Exception $e) {
@@ -1814,6 +1839,32 @@ class GrievanceController extends Controller
             return responseMsgs(false, $e->getMessage(), [], "", "01", responseTime(), "POST", $request->deviceId);
         }
     }
+
+
+    /**
+     * | Save data to workflow track 
+        | Serial No :
+        | Under Con
+     */
+    public function postToTrack($request, $workflowId, $id, $wfDatabase, $user, $wfSenderRoleId, $wfReceiverRoleId)
+    {
+        $mWorkflowTrack = new WorkflowTrack();
+        $current = Carbon::now();
+        $metaReqs = [
+            'moduleId'          => $this->_moduleId,
+            'workflowId'        => $workflowId,
+            'refTableDotId'     => $wfDatabase . '.id',
+            'refTableIdValue'   => $id,
+            'user_id'           => $user->id,
+            'senderRoleId'      => $wfSenderRoleId,
+            'ulb_id'            => $user->ulb_id ?? null,
+            'trackDate'         => $current->format('Y-m-d H:i:s'),
+            'receiverRoleId'    => $wfReceiverRoleId
+        ];
+        $request->request->add($metaReqs);
+        $mWorkflowTrack->saveTrack($request);
+    }
+
 
     /**
      * | Check the role, workfow and application details details
@@ -2199,12 +2250,14 @@ class GrievanceController extends Controller
             }
 
             DB::beginTransaction();
+            # Create log of updated grievance application
             $logDtls = $applicationDtls->replicate();
             $logDtls->setTable('log_grievance_active_applications');
             $logDtls->edited_by = $user->id;
             $logDtls->edited_date = $now;
             $logDtls->application_id = $applicationDtls->id;
             $logDtls->save();
+            # Update the Active Applications
             $mGrievanceActiveApplication->editCitizenGrievance($request);
             DB::commit();
             return responseMsgs(true, "Data Updated", [], "", "02", responseTime(), $request->getMethod(), $request->deviceId);
@@ -2219,6 +2272,8 @@ class GrievanceController extends Controller
      * | Post the grievance from inner workflow to parent workflow
         | Serial No :
         | Under Con
+        | Check different parameter for post back to parent workflow
+        | Use the dynamic database name for updation and table
      */
     public function sendApplicationToParentWf(Request $request)
     {
@@ -2232,6 +2287,7 @@ class GrievanceController extends Controller
         if ($validated->fails())
             return validationError($validated);
         try {
+            $status                         = $this->_solvedStatus;
             $user                           = authUser($request);
             $confDatabase                   = $this->_wfDatabase;
             $current                        = Carbon::now();
@@ -2240,22 +2296,323 @@ class GrievanceController extends Controller
             $mGrievanceActiveApplicantion   = new GrievanceActiveApplicantion();
             $wfDatabaseDetial               = $this->checkRoleWorkflow($request);
             $applicationDetails             = $mGrievanceActiveApplicantion->getGrievanceFullDetails($request->applicationId, $wfDatabaseDetial['databaseType'])->first();
-            // $wfApplicationDetails           = $this->checkApplication($request, $applicationDetails);
+            $wfApplicationDetails           = $this->checkApplication($request, $applicationDetails);
 
             $refParentUlbWorkflowId = $applicationDetails->parent_wf_id;
             $refDbName              = collect($confDatabase)->flip();
             $workflowMasterId       = $wfDatabaseDetial['workflowMasterId'];
             $parentWfmasteId        = $this->getWorkflowMstId($refParentUlbWorkflowId)->first();
-            $associatedDatabase     = $refDbName[$parentWfmasteId->id];
+            $parentDatabase         = $refDbName[$parentWfmasteId->id];
 
+            $request->merge([
+                "status" => $status['CLOSED']
+            ]);
             DB::beginTransaction();
-            // $mGrievanceActiveApplicantion->updateWfParent($applicationDetails['application_no']);
-            // $mGrievanceActiveApplicantion->updateAssociated
+            # Save and update in associated wf and the parent wf 
+            $mGrievanceActiveApplicantion->updateWfParent($applicationDetails['application_no']);
+            $mGrievanceActiveApplicantion->updateAssociatedDbStatus($wfDatabaseDetial['databaseType'], $request);
+
+            # Save the details in track
+            $metaReqs['moduleId']           = $this->_moduleId;
+            $metaReqs['workflowId']         = $applicationDetails->workflow_id;
+            $metaReqs['refTableDotId']      = $wfDatabaseDetial['databaseType'] . ".id";
+            $metaReqs['refTableIdValue']    = $request->applicationId;
+            $metaReqs['senderRoleId']       = $wfApplicationDetails['roleDetails']['wf_role_id'];
+            $metaReqs['user_id']            = $user->id;
+            $metaReqs['ulb_id']             = $user->ulb_id ?? null;
+            $metaReqs['trackDate']          = $current->format('Y-m-d H:i:s');
+            $request->request->add($metaReqs);
+            $mWorkflowTrack->saveTrack($request);
             DB::commit();
-            return "working";
+            return responseMsgs(true, "Application reverted back to its parent workflow!", [], "", "01", responseTime(), $request->getMethod(), $request->deviceId);
         } catch (Exception $e) {
             DB::rollBack();
             return responseMsgs(false, $e->getMessage(), [], "", "02", responseTime(), $request->getMethod(), $request->deviceId);
         }
     }
+
+    /**
+     * | Post associated wf application to the next level
+        | Serial No :
+        | Working
+     */
+    public function awfPostNextLevel(Request $request)
+    {
+        $validated = Validator::make(
+            $request->all(),
+            [
+                'applicationId'     => 'required',
+                // 'receiverRoleId'    => 'nullable',
+                'ulbWorkflowId'     => 'required|',
+                'action'            => 'required|In:forward,backward',
+                'comment'           => 'required',
+            ]
+        );
+        if ($validated->fails())
+            return validationError($validated);
+        try {
+            $user                           = authUser($request);
+            $mWorkflowTrack                 = new WorkflowTrack();
+            $mWfRoleMaps                    = new WfWorkflowrolemap();
+            $mGrievanceActiveApplicantion   = new GrievanceActiveApplicantion();
+            $current                        = Carbon::now();
+            $wfDatabaseType                 = $this->checkRoleWorkflow($request);
+
+            $grievanceActiveApplicantion = $mGrievanceActiveApplicantion->getGrievanceFullDetails($request->applicationId, $wfDatabaseType['databaseType'])->first();
+            if (!$grievanceActiveApplicantion) {
+                throw new Exception("application details not found!");
+            }
+
+            # Variable assigning
+            $senderRoleId   = $grievanceActiveApplicantion->current_role;
+            $ulbWorkflowId  = $grievanceActiveApplicantion->workflow_id;
+            $roleMapsReqs = new Request([
+                'workflowId'    => $ulbWorkflowId,
+                'roleId'        => $senderRoleId
+            ]);
+            $forwardBackwardIds = $mWfRoleMaps->getWfBackForwardIds($roleMapsReqs);
+            if (!collect($forwardBackwardIds)->first()) {
+                throw new Exception("forward role or Backward role not found!");
+            }
+            DB::beginTransaction();
+            if ($request->action == 'forward') {                                                                                                            // Static
+                $forwardBackwardIds->forward_role_id    = $this->checkPostForForward($request, $grievanceActiveApplicantion, $forwardBackwardIds);          // Check Post Next to any level condition
+                $metaReqs['verificationStatus']         = 1;                                                                                                // Static
+                $metaReqs['receiverRoleId']             = $forwardBackwardIds->forward_role_id;
+                $metaData = [
+                    "current_role" => $forwardBackwardIds->forward_role_id,                                                                                 // Update Last Role Id
+                    "last_role_id" => $forwardBackwardIds->forward_role_id
+                ];
+                $mGrievanceActiveApplicantion->updateDatabaseDetails($request->applicationId, $wfDatabaseType['databaseType'], $metaData);
+            }
+            if ($request->action == 'backward') {
+                $metaReqs['receiverRoleId'] = $forwardBackwardIds->backward_role_id;
+                $metaData = [
+                    "current_role" => $forwardBackwardIds->forward_role_id,                                                                                 // Update Last Role Id
+                ];
+                $mGrievanceActiveApplicantion->updateDatabaseDetails($request->applicationId, $wfDatabaseType['databaseType'], $metaData);
+            }
+
+            # Save track to the Database
+            $metaReqs['moduleId']           = $this->_moduleId;
+            $metaReqs['workflowId']         = $grievanceActiveApplicantion->workflow_id;
+            $metaReqs['refTableDotId']      = $wfDatabaseType['databaseType'] . ".id";
+            $metaReqs['refTableIdValue']    = $request->applicationId;
+            $metaReqs['senderRoleId']       = $senderRoleId;
+            $metaReqs['user_id']            = $user->id;
+            $metaReqs['ulb_id']             = $user->ulb_id ?? null;
+            $metaReqs['trackDate']          = $current->format('Y-m-d H:i:s');
+            $request->request->add($metaReqs);
+            $mWorkflowTrack->saveTrack($request);
+
+            # Check in all the cases the data if entered in the track table 
+            $preWorkflowReq = [
+                'workflowId'        => $grievanceActiveApplicantion->workflow_id,
+                'refTableDotId'     => $wfDatabaseType['databaseType'] . ".id",
+                'refTableIdValue'   => $request->applicationId,
+                'receiverRoleId'    => $senderRoleId
+            ];
+
+            $previousWorkflowTrack = $mWorkflowTrack->getWfTrackByRefId($preWorkflowReq);
+            if (!$previousWorkflowTrack) {
+                throw new Exception("Some error in the workflow track, previous data not found in track!");
+            }
+            $previousWorkflowTrack->update([
+                'forward_date' => $current->format('Y-m-d'),
+                'forward_time' => $current->format('H:i:s')
+            ]);
+            DB::commit();
+            return responseMsgs(true, "Successfully Forwarded The Application!!", [], "", "01", responseTime(), $request->getMethod(), $request->deviceId);
+        } catch (Exception $e) {
+            DB::rollBack();
+            return responseMsgs(false, $e->getMessage(), [], "", "02", responseTime(), $request->getMethod(), $request->deviceId);
+        }
+    }
+
+
+    /**
+     * | Escalate the Grievance in the wf
+        | Serial No : 0
+        | Working
+     */
+    public function escalategrievance(Request $request)
+    {
+        $validated = Validator::make(
+            $request->all(),
+            [
+                "escalateStatus"    => "required|int|in:0,1",
+                "ulbWorkflowId"     => "required",
+                "applicationId"     => "required|int",
+            ]
+        );
+        if ($validated->fails())
+            return validationError($validated);
+
+        try {
+            $userId = authUser($request)->id;
+            $mGrievanceActiveApplicantion = new GrievanceActiveApplicantion();
+            $wfMasterId = $this->getWorkflowMstId($request->ulbWorkflowId)->first();
+            $refRequest = new Request([
+                "workflowId" => $wfMasterId->id
+            ]);
+            $wfDatabase = $this->getLevelsOfWf($refRequest);
+            $applicationsData = $mGrievanceActiveApplicantion->getGrievanceFullDetails($request->applicationId, $wfDatabase)->first();
+            if ($applicationsData->in_inner_workflow == true) {
+                throw new Exception("Application is in inner workflow!");
+            }
+            $metaData = [
+                "is_escalate" => $request->escalateStatus,
+                "escalate_by" => $userId
+            ];
+            $mGrievanceActiveApplicantion->updateDatabaseDetails($request->applicationId, $wfDatabase, $metaData);
+            return responseMsgs(true, $request->escalateStatus == 1 ? 'Grievance is Escalated' : "Grievance is removed from Escalated", [], "", "01", responseTime(), $request->getMethod(), $request->deviceId);
+        } catch (Exception $e) {
+            return responseMsgs(false, $e->getMessage(), [], "", "02", responseTime(), $request->getMethod(), $request->deviceId);
+        }
+    }
+
+
+    /**
+     * | Get all master data for grievance 
+        | Serial No :
+        | Under Con
+     */
+    public function getMasterData(Request $request)
+    {
+        try {
+            $mMGrievanceHead = new MGrievanceHead();
+            $mMGrievanceApplyThrough = new MGrievanceApplyThrough();
+
+            $returnData = [
+                'grievanceHead'         => $mMGrievanceHead->getAllActiveData(),
+                'grievanceApplyThrough' => $mMGrievanceApplyThrough->getAllActiveData()
+            ];
+
+            return responseMsgs(true, "listed Master Data!", $returnData, "", "01", responseTime(), $request->getMethod(), $request->deviceId);
+        } catch (Exception $e) {
+            return responseMsgs(false, $e->getMessage(), [], "", "01", responseTime(), $request->getMethod(), $request->deviceId);
+        }
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    /**
+     * | Associated Workflow final approval 
+     * | Final approval dont contain the process of sending application to its parent workflow
+        | Serial No :
+        | Under Con
+     */
+    // public function approvalRejectionAssociatedWf(Request $request)
+    // {
+    //     $validated = Validator::make(
+    //         $request->all(),
+    //         [
+    //             "applicationId" => "required",
+    //             "status"        => "required|in:1,0",
+    //             "ulbWorkflowId" => "required|",
+    //             "comment"       => "required"
+    //         ]
+    //     );
+    //     if ($validated->fails())
+    //         return validationError($validated);
+    //     try {
+    //         $user                           = authUser($request);
+    //         $current                        = Carbon::now();
+    //         $mWfRoleUsermap                 = new WfRoleusermap();
+    //         $mGrievanceActiveApplicantion   = new GrievanceActiveApplicantion();
+    //         $wfDatabaseType                 = $this->checkRoleWorkflow($request);
+
+    //         $grievanceActiveApplicantion = $mGrievanceActiveApplicantion->getGrievanceFullDetails($request->applicationId, $wfDatabaseType['databaseType'])->first();
+    //         if (!$grievanceActiveApplicantion) {
+    //             throw new Exception("application details not found!");
+    //         }
+
+    //         # Check the login user is finisher or not
+    //         $workflowId = $grievanceActiveApplicantion->workflow_id;
+    //         $getRoleReq = new Request([                                                 // make request to get role id of the user
+    //             'userId'        => $user->id,
+    //             'workflowId'    => $workflowId
+    //         ]);
+    //         $readRoleDtls = $mWfRoleUsermap->getRoleByUserWfId($getRoleReq);
+    //         $roleId = $readRoleDtls->wf_role_id;
+    //         if ($roleId != $grievanceActiveApplicantion->finisher_id) {
+    //             throw new Exception("You are not the Finisher!");
+    //         }
+    //         # Condition while the final Check
+    //         $wfGrievanceParamId     = $this->_idGenParamIds;
+    //         $refGrievanceDetails    = $this->preApprovalConditionCheck($grievanceActiveApplicantion, $roleId, $request);
+
+    //         DB::beginTransaction();
+    //         # Approval of grievance application 
+    //         if ($request->status == 1) {
+    //             # Change Consumer no generation
+    //             $grievanceApproveNo = "ASG-APR-" . Str::random(15);                                                     // Static
+    //             $ApprovedId = $this->associatedWfFinalApproval($request, $grievanceApproveNo, $grievanceDetials);
+    //             $msg = "Application Successfully Approved !!";
+    //         }
+    //         # Rejection of grievance application
+    //         if ($request->status == 0) {
+    //             $this->finalRejectionOfAppication($request, $grievanceDetials);
+    //             $msg = "Application Successfully Rejected !!";
+    //         }
+    //         DB::commit();
+    //         return responseMsgs(true, $msg, $ApprovedId, "", "01", responseTime(), "POST", $request->deviceId);
+    //     } catch (Exception $e) {
+    //         return responseMsgs(false, $e->getMessage(), [], "", "02", responseTime(), $request->getMethod(), $request->deviceId);
+    //     }
+    // }
+
+    /**
+     * | Final approval of application in associated workflow
+        | Serial No :
+        | Under Con
+     */
+    // public function associatedWfFinalApproval($request, $approveNo, $activeGrievanceDetials)
+    // {
+    //     $applicationId                  = $request->applicationId;
+    //     $waterTrack                     = new WorkflowTrack();
+    //     $mGrievanceActiveApplicantion   = new GrievanceActiveApplicantion();
+    //     $mGrievanceSolvedApplicantion   = new GrievanceSolvedApplicantion();
+
+    //     # Checking if grievance already exist 
+    //     $checkSolvedGrie = $mGrievanceSolvedApplicantion->getSolvedApplication($applicationId)->first();
+    //     if ($checkSolvedGrie) {
+    //         throw new Exception("Access Denied ! Grievance Already Exist!");
+    //     }
+
+    //     # data formating for save the consumer details 
+    //     $refDetails = [
+    //         "reopenCount"   => $activeGrievanceDetials->reopen_count + 1 - 1,
+    //         "approvalNo"    => $approveNo
+    //     ];
+    //     $grievanceId = $mGrievanceSolvedApplicantion->saveGrievanceDetials($activeGrievanceDetials, $refDetails);
+
+    //     # dend record in the track table 
+    //     $metaReqs = [
+    //         'moduleId'          => $this->_moduleId,
+    //         'workflowId'        => $activeGrievanceDetials->workflow_id,
+    //         'refTableDotId'     => 'grievance_active_applicantions.id',                     // Static
+    //         'refTableIdValue'   => $activeGrievanceDetials->id,
+    //         'user_id'           => authUser($request)->id,
+    //     ];
+    //     $request->request->add($metaReqs);
+    //     $waterTrack->saveTrack($request);
+
+    //     # final delete
+    //     $mGrievanceActiveApplicantion->deleteRecord($applicationId);
+    //     return $grievanceId;
+    // }
+
 }

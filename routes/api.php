@@ -33,13 +33,13 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 Route::controller(GrievanceController::class)->group(function () {
     Route::get('ping', 'pong');                                                         // r
     # Citizen and Agency                                                           
-    Route::post('register-grievance', 'registerGrievance');                             // w 
-    Route::post('reg/register-grievance', 'registerGrievance');
+    Route::post('register-grievance', 'registerGrievance');                             // w / unauth
+    Route::post('reg/register-grievance', 'registerGrievance');                         // w 
     Route::post('auth/req-otp', 'requestOtp');                                          // w / unauth
     Route::post('auth/verify-otp', 'verifyOtp');                                        // w / unauth
     Route::post('auth/get-grievance', 'getAppliedGrievance');                           // w / unauth
     Route::post('list-applied-grievance', 'getGrievanceForAgency');                     // w
-    Route::post('get-application-by-id', "getGrievanceById");                           // uc
+    Route::post('get-application-by-id', 'getGrievanceById');                           // uc
     Route::post('rejected-application-by-agency', 'rejectedGrievanceByAgency');         // w
     Route::post('search-grievance-for-agency', 'searchGrievanceForAgency');             // w
     Route::post('auth/get-grievance-by-mobileno', 'getGrievanceByMobileNo');            // uc / unauth
@@ -50,6 +50,7 @@ Route::controller(GrievanceController::class)->group(function () {
     Route::post('close-grievance-by-agency', 'agencyFinalCloser');                      // uc
     Route::post('agency-reopen-grievance', 'grievanceReopen');                          // uc
     Route::post('update-citzen-grievance', 'updateCitizenGrievance');                   // uc
+    Route::post('get-master-data', 'getMasterData');                                    // uc
 
     # Parent workflow api 
     Route::post('wf/send-application-to-wf', 'sendApplicationToWf');                    // uc
@@ -64,9 +65,9 @@ Route::controller(GrievanceController::class)->group(function () {
     Route::post('wf/approve-reject-applications', 'finalApprovalRejection');            // w
     Route::post('wf/post-associated-wf', 'postAssociatedWf');                           // uc
     Route::post('wf/back-to-parent-wf', 'sendApplicationToParentWf');                   // uc
+    Route::post('wf/escalate-grievance', 'escalateGrievance');                          // uc
 
     # Associated workflow
     Route::post('awf/post-next-level', 'awfPostNextLevel');                             // uc
-    Route::post('awf/verify-reject-doc', 'awfVerifyRejectDocs');                        // uc
     Route::post('awf/approve-reject-applications', 'approvalRejectionAssociatedWf');    // uc       
 });

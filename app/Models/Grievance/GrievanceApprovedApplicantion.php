@@ -11,10 +11,11 @@ class GrievanceApprovedApplicantion extends Model
 
     /**
      * | Get approved application detials
+        | Remove
      */
     public function getApproveApplication($applicationId)
     {
-        return GrievanceApprovedApplicantion::where('id',$applicationId)
-        ->where('status',1);
+        return GrievanceApprovedApplicantion::where('id', $applicationId)
+            ->where('status', 1);
     }
 }
