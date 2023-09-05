@@ -9,13 +9,15 @@ use Illuminate\Support\Facades\DB;
 class WfRoleusermap extends Model
 {
     use HasFactory;
+    protected $connection = 'pgsql_master';
 
     /**
      * | Get role by User and Workflow Id
      */
     public function getRoleByUserWfId($req)
     {
-        return DB::table('wf_roleusermaps as r')
+        return DB::connection('pgsql_master')
+            ->table('wf_roleusermaps as r')
             ->select(
                 'r.wf_role_id',
                 'w.forward_role_id',

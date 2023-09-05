@@ -11,6 +11,7 @@ class WorkflowTrack extends Model
 {
     use HasFactory;
     protected $guarded = [];
+    protected $connection = 'pgsql_master';
 
     /**
      * | Save the details in the wf tracks
@@ -53,12 +54,13 @@ class WorkflowTrack extends Model
     }
 
 
-        /**
+    /**
      * | Get Tracks by Ref Table Id
      */
     public function getTracksByRefId($mRefTable, $tableId)
     {
-        return DB::table('workflow_tracks')
+        return DB::connection('pgsql_master')
+        ->table('workflow_tracks')
             ->select(
                 'workflow_tracks.ref_table_dot_id AS referenceTable',
                 'workflow_tracks.ref_table_id_value AS applicationId',

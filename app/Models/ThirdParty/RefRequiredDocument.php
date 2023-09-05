@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 class RefRequiredDocument extends Model
 {
     use HasFactory;
+    protected $connection = 'pgsql_master';
 
     /**
      * | Get  All Document Collictively For Array Of DocCode

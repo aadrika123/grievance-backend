@@ -10,6 +10,9 @@ use Illuminate\Support\Facades\DB;
 class WorkflowMap extends Model
 {
     use HasFactory;
+    protected $connection = 'pgsql_master';
+
+
     //get role details by 
     public function getRoleDetails($request)
     {
@@ -21,7 +24,9 @@ class WorkflowMap extends Model
         );
         if ($validated->fails())
             return validationError($validated);
-        $roleDetails = DB::table('wf_workflowrolemaps')
+
+        $roleDetails = DB::connection('pgsql_master')
+            ->table('wf_workflowrolemaps')
             ->select(
                 'wf_workflowrolemaps.id',
                 'wf_workflowrolemaps.workflow_id',

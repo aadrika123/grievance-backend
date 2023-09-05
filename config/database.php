@@ -63,6 +63,7 @@ return [
             ]) : [],
         ],
 
+        # Default grievance database
         'pgsql' => [
             'driver' => 'pgsql',
             'url' => env('DATABASE_URL'),
@@ -76,6 +77,44 @@ return [
             'prefix_indexes' => true,
             'search_path' => 'public',
             'sslmode' => 'prefer',
+        ],
+
+        # For master database
+        'pgsql_master' => [
+            'driver' => 'pgsql',
+            'url' => env('DATABASE_URL'),
+            'host' => env('DB_MASTER_HOST', 'forge'),
+            'port' => env('DB_MASTER_PORT', 'forge'),
+            'database' => env('DB_MASTER_DATABASE', 'forge'),
+            'username' => env('DB_MASTER_USERNAME', 'forge'),
+            'password' => env('DB_MASTER_PASSWORD', ''),
+            'charset' => 'utf8',
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'search_path' => 'public',
+            'sslmode' => 'prefer',
+            'options'   => [
+                PDO::ATTR_PERSISTENT => true,
+            ],
+        ],
+
+        # For Property database
+        'pgsql_property' => [
+            'driver' => 'pgsql',
+            'url' => env('DATABASE_URL'),
+            'host' => env('DB_PROP_HOST', 'forge'),
+            'port' => env('DB_PROP_PORT', 'forge'),
+            'database' => env('DB_PROP_DATABASE', 'forge'),
+            'username' => env('DB_PROP_USERNAME', 'forge'),
+            'password' => env('DB_PROP_PASSWORD', ''),
+            'charset' => 'utf8',
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'search_path' => 'public',
+            'sslmode' => 'prefer',
+            'options'   => [
+                PDO::ATTR_PERSISTENT => true,
+            ],
         ],
 
         'sqlsrv' => [
@@ -125,7 +164,7 @@ return [
 
         'options' => [
             'cluster' => env('REDIS_CLUSTER', 'redis'),
-            'prefix' => env('REDIS_PREFIX', Str::slug(env('APP_NAME', 'laravel'), '_').'_database_'),
+            'prefix' => env('REDIS_PREFIX', Str::slug(env('APP_NAME', 'laravel'), '_') . '_database_'),
         ],
 
         'default' => [

@@ -10,6 +10,7 @@ class WfActiveDocument extends Model
 {
     use HasFactory;
     protected $guarded = [];
+    protected $connection = 'pgsql_master';
 
     /**
      * | Get Workflow Active Documents By Active Id
@@ -67,21 +68,20 @@ class WfActiveDocument extends Model
      */
     public function getDocsByAppNo($applicationId, $workflowId, $moduleId)
     {
-        return DB::table('wf_active_documents as d')
-            ->select(
-                'd.id',
-                'd.document',
-                'd.remarks',
-                'd.verify_status',
-                'd.doc_code',
-                'd.doc_category',
-                'd.status',
-                DB::raw("concat(relative_path,'/',document) as ref_doc_path"),
-            )
-            ->where('d.active_id', $applicationId)
-            ->where('d.workflow_id', $workflowId)
-            ->where('d.module_id', $moduleId)
-            ->where('d.status', '!=', 0)
+        return WfActiveDocument::select(
+            'wf_active_documents.id',
+            'wf_active_documents.document',
+            'wf_active_documents.remarks',
+            'wf_active_documents.verify_status',
+            'wf_active_documents.doc_code',
+            'wf_active_documents.doc_category',
+            'wf_active_documents.status',
+            DB::raw("concat(relative_path,'/',document) as ref_doc_path"),
+        )
+            ->where('wf_active_documents.active_id', $applicationId)
+            ->where('wf_active_documents.workflow_id', $workflowId)
+            ->where('wf_active_documents.module_id', $moduleId)
+            ->where('wf_active_documents.status', '!=', 0)
             ->get();
     }
 

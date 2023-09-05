@@ -65,6 +65,11 @@ class GrievanceController extends Controller
     private $_condition;
     private $_solvedStatus;
 
+    protected $_DB_NAME;
+    protected $_DB;
+    protected $_DB_NAME2;
+    protected $_DB2;
+
     public function __construct()
     {
         $this->_moduleId            = Config::get('workflow-constants.GRIEVANCE_MODULE_ID');
@@ -82,8 +87,59 @@ class GrievanceController extends Controller
         $this->_wfRejectedDatabase  = Config::get('grievance-constants.WF_REJECTED_DATABASE');
         $this->_condition           = Config::get('grievance-constants.CONDITION');
         $this->_solvedStatus        = Config::get('grievance-constants.SOLVED_STATUS');
+
+        # Database connectivity
+        $this->_DB_NAME     = "pgsql_property";
+        $this->_DB          = DB::connection($this->_DB_NAME);
+        $this->_DB_NAME2    = "pgsql_master";
+        $this->_DB2         = DB::connection($this->_DB_NAME2);
     }
 
+
+    /**
+     * | Database transaction connection
+     */
+    public function begin()
+    {
+        $db1 = DB::connection()->getDatabaseName();
+        $db2 = $this->_DB->getDatabaseName();
+        $db3 = $this->_DB2->getDatabaseName();
+        DB::beginTransaction();
+        if ($db1 != $db2)
+            $this->_DB->beginTransaction();
+        if ($db1 != $db3 && $db2 != $db3)
+            $this->_DB2->beginTransaction();
+    }
+    /**
+     * | Database transaction connection
+     */
+    public function rollback()
+    {
+        $db1 = DB::connection()->getDatabaseName();
+        $db2 = $this->_DB->getDatabaseName();
+        $db3 = $this->_DB2->getDatabaseName();
+        DB::rollBack();
+        if ($db1 != $db2)
+            $this->_DB->rollBack();
+        if ($db1 != $db3 && $db2 != $db3)
+            $this->_DB2->rollBack();
+    }
+    /**
+     * | Database transaction connection
+     */
+    public function commit()
+    {
+        $db1 = DB::connection()->getDatabaseName();
+        $db2 = $this->_DB->getDatabaseName();
+        $db3 = $this->_DB2->getDatabaseName();
+        DB::commit();
+        if ($db1 != $db2)
+            $this->_DB->commit();
+        if ($db1 != $db3 && $db2 != $db3)
+            $this->_DB2->commit();
+    }
+
+    #-------------------------------------------[Module Specific operation]--------------------------------------------#
 
     /**
      * | Request Otp 
@@ -198,7 +254,7 @@ class GrievanceController extends Controller
                 throw new Exception("initiatorRoleId or finisherRoleId not found for respective Workflow!");
             }
 
-            DB::beginTransaction();
+            $this->begin();
             $applicationNo  = "GRE" . Str::random(10) . Str::random(2);          // Use the id generation service
             $document       = $request->document;
             if ($document) {
@@ -256,7 +312,7 @@ class GrievanceController extends Controller
                 ]
             );
             $mWorkflowTrack->saveTrack($metaReqs);
-            DB::commit();
+            $this->commit();
 
             # Send Message behalf of registration
             $watsAppMessge = (Whatsapp_Send(
@@ -278,7 +334,7 @@ class GrievanceController extends Controller
             ];
             return responseMsgs(true, "You'r Grievance is submited successfully!", $returnData, "", "01", responseTime(), "POST", $request->deviceId);
         } catch (Exception $e) {
-            DB::rollBack();
+            $this->roleback();
             return responseMsgs(false, $e->getMessage(), [], "", "01", responseTime(), "POST", $request->deviceId);
         }
     }
@@ -707,7 +763,7 @@ class GrievanceController extends Controller
             if ($ifFullDocVerified == 1)
                 throw new Exception("Document Fully Verified");
 
-            DB::beginTransaction();
+            $this->begin();
             if ($request->docStatus == "Verified") {
                 $status = 1;
             }
@@ -732,10 +788,10 @@ class GrievanceController extends Controller
             if ($ifFullDocVerifiedV1 == 1) {                                        // If The Document Fully Verified Update Verify Status
                 $mGrievanceActiveApplicantion->updateAppliVerifyStatus($applicationId, true);
             }
-            DB::commit();
+            $this->commit();
             return responseMsgs(true, $request->docStatus . " Successfully", [], "", "1.0", responseTime(), "POST", $request->deviceId ?? "");
         } catch (Exception $e) {
-            DB::rollBack();
+            $this->roleback();
             return responseMsgs(false, $e->getMessage(), [], "", "1.0", responseTime(), "POST", $request->deviceId ?? "");
         }
     }
@@ -813,7 +869,7 @@ class GrievanceController extends Controller
                 throw new Exception("forward role or Backward role not found!");
             }
 
-            DB::beginTransaction();
+            $this->begin();
             if ($request->action == 'forward') {                                                                                                            // Static
                 $forwardBackwardIds->forward_role_id        = $this->checkPostForForward($request, $GrievanceActiveApplicantion, $forwardBackwardIds);      // Check Post Next to any level condition
                 $metaReqs['verificationStatus']             = 1;                                                                                            // Static
@@ -857,10 +913,10 @@ class GrievanceController extends Controller
                 'forward_date' => $current->format('Y-m-d'),
                 'forward_time' => $current->format('H:i:s')
             ]);
-            DB::commit();
+            $this->commit();
             return responseMsgs(true, "Successfully Forwarded The Application!!", [], "", "01", responseTime(), "POST", $request->deviceId);
         } catch (Exception $e) {
-            DB::rollBack();
+            $this->roleback();
             return responseMsgs(false, $e->getMessage(), [], "", "01", responseTime(), "POST", $request->deviceId);
         }
     }
@@ -1201,7 +1257,7 @@ class GrievanceController extends Controller
             $wfGrievanceParamId     = $this->_idGenParamIds;
             $refGrievanceDetails    = $this->preApprovalConditionCheck($grievanceDetials, $roleId, $request);
 
-            DB::beginTransaction();
+            $this->begin();
             # Approval of grievance application 
             if ($request->status == 1) {
                 # Consumer no generation
@@ -1214,10 +1270,10 @@ class GrievanceController extends Controller
                 $this->finalRejectionOfAppication($request, $grievanceDetials);
                 $msg = "Application Successfully Rejected !!";
             }
-            DB::commit();
+            $this->commit();
             return responseMsgs(true, $msg, $ApprovedId, "", "01", responseTime(), "POST", $request->deviceId);
         } catch (Exception $e) {
-            DB::rollBack();
+            $this->roleback();
             return responseMsgs(false, $e->getMessage(), [], "", "01", responseTime(), "POST", $request->deviceId);
         }
     }
@@ -1406,7 +1462,7 @@ class GrievanceController extends Controller
             }
             $grievanceDetails = $this->checkParamToSendToWf($roleDetails, $request);
 
-            DB::beginTransaction();
+            $this->begin();
             switch ($request->status) {
                 case ("1"):
                     # Send application to the workflow
@@ -1447,10 +1503,10 @@ class GrievanceController extends Controller
                     $msg = "application rejected!";
                     break;
             }
-            DB::commit();
+            $this->commit();
             return responseMsgs(true, $msg, [], "", "02", responseTime(), "POST", $request->deviceId);
         } catch (Exception $e) {
-            DB::rollBack();
+            $this->roleback();
             return responseMsgs(false, $e->getMessage(), [], "", "01", responseTime(), "POST", $request->deviceId);
         }
     }
@@ -1823,7 +1879,7 @@ class GrievanceController extends Controller
                 "senderRoleId"      => $wfApplicationDetails['roleDetails']['wf_role_id']
             ];
 
-            DB::beginTransaction();
+            $this->begin();
 
             # Data base replicate
             $associatedId = $mGrievanceActiveApplicantion->saveGrievanceInAssociatedWf($applicationDetails, $associatedDatabase, $refMetaReq);
@@ -1832,10 +1888,10 @@ class GrievanceController extends Controller
             $this->postToTrack($request, $applicationDetails->workflow_id, $applicationDetails->id, $wfDatabaseDetial['databaseType'], $user, $refMetaReq['senderRoleId'], null);
             $this->postToTrack($request, $refUlbWorkflowId, $associatedId, $associatedDatabase, $user, $refMetaReq['senderRoleId'], $refMetaReq['initiatorRoleId']);
 
-            DB::commit();
+            $this->commit();
             return responseMsgs(true, "Applied Grievance is Poted To inner Wf!", [], "", "02", responseTime(), "POST", $request->deviceId);
         } catch (Exception $e) {
-            DB::rollBack();
+            $this->roleback();
             return responseMsgs(false, $e->getMessage(), [], "", "01", responseTime(), "POST", $request->deviceId);
         }
     }
@@ -2089,14 +2145,14 @@ class GrievanceController extends Controller
                 throw new Exception("Role details not found!");
             }
             $this->checkParamForAgncyCloser($request, $solvedGrievanceDetails, $roleDetails);
-            DB::beginTransaction();
+            $this->begin();
             # Save the Solved application detial in the Closer database and update the solved application status '2' to make it closed
             $mGrievanceClosedApplicantion->saveClosedGrievance($solvedGrievanceDetails, $request);
             $mGrievanceSolvedApplicantion->updateStatus($solvedApplicationId, $status['CLOSED']);
-            DB::commit();
+            $this->commit();
             return responseMsgs(true, "Grievance Closed successfully!", [], "", "02", responseTime(), "POST", $request->deviceId);
         } catch (Exception $e) {
-            DB::rollBack();
+            $this->roleback();
             return responseMsgs(false, $e->getMessage(), [], "", "01", responseTime(), "POST", $request->deviceId);
         }
     }
@@ -2157,7 +2213,7 @@ class GrievanceController extends Controller
                 throw new Exception("Application data not found!");
             }
 
-            DB::beginTransaction();
+            $this->begin();
             $applicationNo  = "GRE" . Str::random(10) . "RE";
             $refRequest = [
                 "applicationNo"     => $applicationNo,
@@ -2198,14 +2254,14 @@ class GrievanceController extends Controller
             $mGrievanceReopenApplicantionDetail->saveReopenDetails($request, $applicationDetails, $applicationNo);
             $mGrievanceSolvedApplicantion->updateStatus($applicationDetails->id, $status['REOPEN']);
             $mWfActiveDocument->updateActiveIdOfDoc($docRequest, $newGrievanceDetails['id']);
-            DB::commit();
+            $this->commit();
             $returnDetails = [
                 "applicationNo" => $applicationNo
             ];
             # Send Whatsapp message
             return responseMsgs(true, "Grievacne successfully reopened!", $returnDetails, "", "02", responseTime(), "POST", $request->deviceId);
         } catch (Exception $e) {
-            DB::rollBack();
+            $this->roleback();
             return responseMsgs(false, $e->getMessage(), [], "", "01", responseTime(), "POST", $request->deviceId);
         }
     }
@@ -2249,7 +2305,7 @@ class GrievanceController extends Controller
                 throw new Exception("Application details not found!");
             }
 
-            DB::beginTransaction();
+            $this->begin();
             # Create log of updated grievance application
             $logDtls = $applicationDtls->replicate();
             $logDtls->setTable('log_grievance_active_applications');
@@ -2259,10 +2315,10 @@ class GrievanceController extends Controller
             $logDtls->save();
             # Update the Active Applications
             $mGrievanceActiveApplication->editCitizenGrievance($request);
-            DB::commit();
+            $this->commit();
             return responseMsgs(true, "Data Updated", [], "", "02", responseTime(), $request->getMethod(), $request->deviceId);
         } catch (Exception $e) {
-            DB::rollBack();
+            $this->roleback();
             return responseMsgs(false, $e->getMessage(), [], "", "02", responseTime(), $request->getMethod(), $request->deviceId);
         }
     }
@@ -2307,7 +2363,7 @@ class GrievanceController extends Controller
             $request->merge([
                 "status" => $status['CLOSED']
             ]);
-            DB::beginTransaction();
+            $this->begin();
             # Save and update in associated wf and the parent wf 
             $mGrievanceActiveApplicantion->updateWfParent($applicationDetails['application_no']);
             $mGrievanceActiveApplicantion->updateAssociatedDbStatus($wfDatabaseDetial['databaseType'], $request);
@@ -2323,10 +2379,10 @@ class GrievanceController extends Controller
             $metaReqs['trackDate']          = $current->format('Y-m-d H:i:s');
             $request->request->add($metaReqs);
             $mWorkflowTrack->saveTrack($request);
-            DB::commit();
+            $this->commit();
             return responseMsgs(true, "Application reverted back to its parent workflow!", [], "", "01", responseTime(), $request->getMethod(), $request->deviceId);
         } catch (Exception $e) {
-            DB::rollBack();
+            $this->roleback();
             return responseMsgs(false, $e->getMessage(), [], "", "02", responseTime(), $request->getMethod(), $request->deviceId);
         }
     }
@@ -2374,7 +2430,7 @@ class GrievanceController extends Controller
             if (!collect($forwardBackwardIds)->first()) {
                 throw new Exception("forward role or Backward role not found!");
             }
-            DB::beginTransaction();
+            $this->begin();
             if ($request->action == 'forward') {                                                                                                            // Static
                 $forwardBackwardIds->forward_role_id    = $this->checkPostForForward($request, $grievanceActiveApplicantion, $forwardBackwardIds);          // Check Post Next to any level condition
                 $metaReqs['verificationStatus']         = 1;                                                                                                // Static
@@ -2421,10 +2477,10 @@ class GrievanceController extends Controller
                 'forward_date' => $current->format('Y-m-d'),
                 'forward_time' => $current->format('H:i:s')
             ]);
-            DB::commit();
+            $this->commit();
             return responseMsgs(true, "Successfully Forwarded The Application!!", [], "", "01", responseTime(), $request->getMethod(), $request->deviceId);
         } catch (Exception $e) {
-            DB::rollBack();
+            $this->roleback();
             return responseMsgs(false, $e->getMessage(), [], "", "02", responseTime(), $request->getMethod(), $request->deviceId);
         }
     }
@@ -2554,7 +2610,7 @@ class GrievanceController extends Controller
     //         $wfGrievanceParamId     = $this->_idGenParamIds;
     //         $refGrievanceDetails    = $this->preApprovalConditionCheck($grievanceActiveApplicantion, $roleId, $request);
 
-    //         DB::beginTransaction();
+    //         $this->begin();
     //         # Approval of grievance application 
     //         if ($request->status == 1) {
     //             # Change Consumer no generation
@@ -2567,7 +2623,7 @@ class GrievanceController extends Controller
     //             $this->finalRejectionOfAppication($request, $grievanceDetials);
     //             $msg = "Application Successfully Rejected !!";
     //         }
-    //         DB::commit();
+    //         $this->commit();
     //         return responseMsgs(true, $msg, $ApprovedId, "", "01", responseTime(), "POST", $request->deviceId);
     //     } catch (Exception $e) {
     //         return responseMsgs(false, $e->getMessage(), [], "", "02", responseTime(), $request->getMethod(), $request->deviceId);

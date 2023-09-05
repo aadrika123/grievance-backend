@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 class WfWorkflow extends Model
 {
     use HasFactory;
-
+    protected $connection = 'pgsql_master';
 
     /**
      * | Get Initiator Id While Sending to level Pending For the First Time

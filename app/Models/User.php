@@ -11,6 +11,7 @@ use Laravel\Sanctum\HasApiTokens;
 class User extends Authenticatable
 {
     use HasApiTokens, HasFactory, Notifiable;
+    protected $connection = 'pgsql_master';
 
     /**
      * The attributes that are mass assignable.
@@ -42,4 +43,15 @@ class User extends Authenticatable
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
     ];
+
+
+    /**
+     * | Get user details according to mobile no 
+     * | @param mobileNo
+     */
+    public function getUserByMobileNo($mobileNo)
+    {
+        return User::where('mobile', $mobileNo)
+            ->where('suspended', false);
+    }
 }

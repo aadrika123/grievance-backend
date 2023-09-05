@@ -1,12 +1,11 @@
 <?php
 
-namespace App\Models\Workflow;
+namespace App\Models\Grievance;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class WfMaster extends Model
+class MGrievanceQuestion extends Model
 {
     use HasFactory;
-    protected $connection = 'pgsql_master';
 }
