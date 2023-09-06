@@ -1407,16 +1407,16 @@ class GrievanceController extends Controller
             }
             $perPage = $request->perPage ?? 10;
             $mGrievanceActiveApplicantion = new GrievanceActiveApplicantion();
-            $listedetails = $mGrievanceActiveApplicantion->getGriavanceDetails($moduleId)
+            $listedDetails = $mGrievanceActiveApplicantion->getGriavanceDetails($moduleId)
                 ->selectRaw(
                     DB::raw("'$workflowMstId' as ref_workflow_id")
                 )
                 ->whereNull('current_role')
                 ->get();
-            if (!collect($listedetails)->first()) {
+            if (!collect($listedDetails)->first()) {
                 $msg = "Data not found!";
             }
-            return responseMsgs(true, $msg, remove_null($listedetails), "", "01", responseTime(), "POST", $request->deviceId);
+            return responseMsgs(true, $msg, remove_null($listedDetails), "", "01", responseTime(), "POST", $request->deviceId);
         } catch (Exception $e) {
             return responseMsgs(false, $e->getMessage(), [], "", "01", responseTime(), "POST", $request->deviceId);
         }

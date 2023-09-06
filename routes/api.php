@@ -93,5 +93,6 @@ Route::controller(GrievanceAgencyController::class)->group(function () {
     Route::post('jason', 'addJson');                                                        // uc
     Route::post('agency/get-user-tran-details', 'getTransactionDetails');                   // uc
     Route::post('agency/get-question-list', 'getMasterQuestions');                          // uc
+    Route::post('agency/get-grievance-list', 'getGreviancesList');                          // uc
 });
 // });

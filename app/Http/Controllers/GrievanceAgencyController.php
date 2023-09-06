@@ -11,6 +11,7 @@ use App\Traits\GrievanceTrait;
 use App\Traits\Workflow\Workflow;
 use Exception;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
@@ -263,30 +264,31 @@ class GrievanceAgencyController extends Controller
         $mMGrievanceQuestion = new MGrievanceQuestion();
         $finalizeQuestion = collect($parentQuestions)->map(function ($value)
         use ($mMGrievanceQuestion) {
-            #
+            # Check if the question have child
             $childQuestions = $mMGrievanceQuestion->getQuestionsByParentId($value->id)->get();
             if (!collect($childQuestions)->first()) {
                 $value['childQuestions'] = [];
                 return $value;
             }
 
-            # 
-            $subChildQuestion = collect($childQuestions)->map(function ($secondValue) {
-                if ($secondValue->parent_question_id == 0 || isNull($secondValue->parent_question_id)) {
-                    $recursiveData[] = $secondValue;
-                    $associatedChild = $this->getMultipleLevelNesting($recursiveData);
-                    $secondValue['childQuestions'] = $associatedChild;
+            # etarate the child process
+            $subChildQuestion = collect($childQuestions)->map(function ($secondValue)
+            use ($mMGrievanceQuestion) {
+                $childQuestions = $mMGrievanceQuestion->getQuestionsByParentId($secondValue->id)->get();
+                if (!collect($childQuestions)->first()) {
+                    $secondValue['childQuestions'] = [];
                     return $secondValue;
                 }
-                $secondValue['childQuestions'] = [];
+                $associatedChild = $this->getMultipleLevelNesting($childQuestions);
+                $secondValue['childQuestions'] = $associatedChild;
                 return $secondValue;
             });
-            #
-            $value['childQuestions'] = $subChildQuestion;
+            # format the data 
+            $value['childQuestions'] = ($subChildQuestion->filter())->toArray();
             return $value;
         });
 
-        return $finalizeQuestion;
+        return ($finalizeQuestion->filter())->toArray();
     }
 
 
