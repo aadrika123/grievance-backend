@@ -16,6 +16,8 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Http;
 
+use function PHPUnit\Framework\isNull;
+
 /**
  * | Created by :
  * | Created at :
@@ -142,12 +144,13 @@ class GrievanceAgencyController extends Controller
         try {
             $mUser          = new User();
             $mobileNo       = $request->mobileNo;
+            $msg            = "User and module related details!";
 
             $userDetails = $mUser->getUserByMobileNo($mobileNo)->first();
             if (!$userDetails) {
-                throw new Exception("User Details don't exist according to $mobileNo");
+                $msg = "User Details don't exist according to $mobileNo";
             }
-            return responseMsgs(true, "User and module related details!", $userDetails, "", "01", responseTime(), $request->getMethod(), $request->deviceId);
+            return responseMsgs(true, $msg, $userDetails, "", "01", responseTime(), $request->getMethod(), $request->deviceId);
         } catch (Exception $e) {
             return responseMsgs(false, $e->getMessage(), [], "", "01", responseTime(), $request->getMethod(), $request->deviceId);
         }
@@ -220,8 +223,72 @@ class GrievanceAgencyController extends Controller
      */
     public function getMasterQuestions(Request $request)
     {
-        
+        $validated = Validator::make(
+            $request->all(),
+            [
+                "questionId" => "nullable|int"
+            ]
+        );
+        if ($validated->fails()) {
+            return validationError($validated);
+        }
+
+        try {
+            $mMGrievanceQuestion = new MGrievanceQuestion();
+            if ($request->questionId && $request->questionId != 0) {
+                $parentQuestions = $mMGrievanceQuestion->getQuestionListById($request->questionId)->get();
+            } else {
+                $parentQuestions = $mMGrievanceQuestion->getAllQuestionList()
+                    ->where('parent_question_id', 0)
+                    ->orWhereNull('parent_question_id')
+                    ->get();
+            }
+
+            $nestedData = $this->getMultipleLevelNesting($parentQuestions);
+            return responseMsgs(true, 'List of questions!', remove_null($nestedData), "", "01", responseTime(), $request->getMethod(), $request->deviceId);
+        } catch (Exception $e) {
+            return responseMsgs(false, $e->getMessage(), [], "", "01", responseTime(), $request->getMethod(), $request->deviceId);
+        }
     }
+
+
+    /**
+     * | Get the multiple level nesting 
+        | Serial No :
+        | Under Con :
+     */
+    public function getMultipleLevelNesting($parentQuestions)
+    {
+        # Get formatted data 
+        $mMGrievanceQuestion = new MGrievanceQuestion();
+        $finalizeQuestion = collect($parentQuestions)->map(function ($value)
+        use ($mMGrievanceQuestion) {
+            #
+            $childQuestions = $mMGrievanceQuestion->getQuestionsByParentId($value->id)->get();
+            if (!collect($childQuestions)->first()) {
+                $value['childQuestions'] = [];
+                return $value;
+            }
+
+            # 
+            $subChildQuestion = collect($childQuestions)->map(function ($secondValue) {
+                if ($secondValue->parent_question_id == 0 || isNull($secondValue->parent_question_id)) {
+                    $recursiveData[] = $secondValue;
+                    $associatedChild = $this->getMultipleLevelNesting($recursiveData);
+                    $secondValue['childQuestions'] = $associatedChild;
+                    return $secondValue;
+                }
+                $secondValue['childQuestions'] = [];
+                return $secondValue;
+            });
+            #
+            $value['childQuestions'] = $subChildQuestion;
+            return $value;
+        });
+
+        return $finalizeQuestion;
+    }
+
 
 
 
