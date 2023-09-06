@@ -244,9 +244,18 @@ class GrievanceAgencyController extends Controller
                     ->orWhereNull('parent_question_id')
                     ->get();
             }
-
-            $nestedData = $this->getMultipleLevelNesting($parentQuestions);
-            return responseMsgs(true, 'List of questions!', remove_null($nestedData), "", "01", responseTime(), $request->getMethod(), $request->deviceId);
+            $nestedData     = $this->getMultipleLevelNesting($parentQuestions);
+            $refPropData    = (collect($nestedData)->where('module', 'property'));
+            $refWaterData   = (collect($nestedData)->where('module', 'water'));
+            $refTradeData   = (collect($nestedData)->where('module', 'trade'));
+            $refAdvData     = (collect($nestedData)->where('module', 'advertisement'));
+            $returnData = [
+                "property"      => $refPropData->values(),
+                "trade"         => $refTradeData->values(),
+                "advertisement" => $refAdvData->values(),
+                "water"         => $refWaterData->values()
+            ];
+            return responseMsgs(true, 'List of questions!', $returnData, "", "01", responseTime(), $request->getMethod(), $request->deviceId);
         } catch (Exception $e) {
             return responseMsgs(false, $e->getMessage(), [], "", "01", responseTime(), $request->getMethod(), $request->deviceId);
         }
