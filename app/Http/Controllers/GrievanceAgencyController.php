@@ -4,7 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\Grievance\MGrievanceQuestion;
 use App\Models\Property\PropActiveSaf;
+use App\Models\ThirdParty\ApiMaster;
 use App\Models\User;
+use App\Models\Workflow\ModuleMaster;
 use App\Traits\GrievanceTrait;
 use App\Traits\Workflow\Workflow;
 use Exception;
@@ -12,6 +14,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Http;
 
 /**
  * | Created by :
@@ -43,6 +46,7 @@ class GrievanceAgencyController extends Controller
     private $_wfRejectedDatabase;
     private $_condition;
     private $_solvedStatus;
+    private $_moduleIds;
 
     protected $_DB_NAME;
     protected $_DB;
@@ -51,6 +55,7 @@ class GrievanceAgencyController extends Controller
 
     public function __construct()
     {
+        $this->_moduleIds           = Config::get('workflow-constants.MODULE_LISTING');
         $this->_moduleId            = Config::get('workflow-constants.GRIEVANCE_MODULE_ID');
         $this->_workflowMstId       = Config::get('workflow-constants.GRIEVANCE_WF_MASTER_ID');
         $this->_imageName           = Config::get('grievance-constants.REF_IMAGE_NAME');
@@ -135,25 +140,14 @@ class GrievanceAgencyController extends Controller
             return validationError($validated);
         }
         try {
-            $mUser      = new User();
-            $mobileNo   = $request->mobileNo;
+            $mUser          = new User();
+            $mobileNo       = $request->mobileNo;
 
-            return $userDetails = $mUser->getUserByMobileNo($mobileNo)->first();
+            $userDetails = $mUser->getUserByMobileNo($mobileNo)->first();
             if (!$userDetails) {
                 throw new Exception("User Details don't exist according to $mobileNo");
             }
-            $propDetails    = $this->getPropDetails($mobileNo, $userDetails);
-            $waterDetails   = $this->getWaterDetails($mobileNo, $userDetails);
-            $tradeDetails   = $this->getTradeDetails($mobileNo, $userDetails);
-
-
-            $returnData = [
-                "UserDetails"       => $userDetails,
-                "propertyDetails"   => $propDetails,
-                "waterDetails"      => $waterDetails,
-                "tradeDetails"      => $tradeDetails
-            ];
-            return responseMsgs(true, "User and module related details!", $returnData, "", "01", responseTime(), $request->getMethod(), $request->deviceId);
+            return responseMsgs(true, "User and module related details!", $userDetails, "", "01", responseTime(), $request->getMethod(), $request->deviceId);
         } catch (Exception $e) {
             return responseMsgs(false, $e->getMessage(), [], "", "01", responseTime(), $request->getMethod(), $request->deviceId);
         }
@@ -161,18 +155,74 @@ class GrievanceAgencyController extends Controller
 
 
     /**
-     * | Get the property detial 
-     * | ie. get the list of holding and saf
+     * | Get user transaction details for for respective module
         | Serial No :
         | Under Con
      */
-    public function getPropDetails($mobileNo, $userDetails)
+    public function getTransactionDetails(Request $request)
     {
-        // $userId = $userDetails->id;
-        // $mPropActiveSaf = new PropActiveSaf();
-        // $mPropActiveSaf->getPropByUserId();
+        $validated = Validator::make(
+            $request->all(),
+            [
+                "userId" => "required|numeric",
+                "moduleId" => "required"
+            ]
+        );
+        if ($validated->fails()) {
+            return validationError($validated);
+        }
+        try {
+            $userId         = $request->userId;
+            $moduleId       = $request->moduleId;
+            $mModuleMaster  = new ModuleMaster();
+            $mApiMaster     = new ApiMaster();
+            $confModuleIds  = $this->_moduleIds;
 
+            $listOfModule = $mModuleMaster->getModuleList();
+            $moduleIds = collect($listOfModule)->pluck('id');
+            if (in_array($moduleId, $moduleIds->toArray())) {
+                throw new Exception("Provided module Id $moduleId is invalid!");
+            }
+
+            $transferData = [
+                "auth" => $request->auth,
+                "userId" => $userId
+            ];
+            switch ($moduleId) {
+                case ($confModuleIds['WATER']):
+                    $endPoint = "water_endpoint";
+                    break;
+                case ($confModuleIds['PROPERTY']):
+                    $endPoint = "prop_endpoint";
+                    break;
+                case ($confModuleIds['TRADE']):
+                    $endPoint = "trade_endpoint";
+                    break;
+            }
+
+            # Calling api process
+            $rawData = Http::withHeaders([
+                'Authorization' => "Bearer" . collect($request->all())['token'],
+            ])
+                ->post("$endPoint", $transferData);
+
+            $userDetails = [];
+            return responseMsgs(true, "User transaction details in !", $userDetails, "", "01", responseTime(), $request->getMethod(), $request->deviceId);
+        } catch (Exception $e) {
+            return responseMsgs(false, $e->getMessage(), [], "", "01", responseTime(), $request->getMethod(), $request->deviceId);
+        }
     }
+
+    /**
+     * | Get the recent activity details 
+        | Serial No :
+        | Under Con
+     */
+    public function getMasterQuestions(Request $request)
+    {
+        
+    }
+
 
 
 

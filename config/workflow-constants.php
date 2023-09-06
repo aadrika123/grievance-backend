@@ -15,4 +15,11 @@ return [
         "JSK"   => 8,
         "TC"    => 5
     ],
+
+    "MODULE_LISTING" => [
+        "WATER"         => 2,
+        "PROPERTY"      => 1,
+        "TRADE"         => 3,
+        "ADVERTISEMENT" => 5
+    ],
 ];
