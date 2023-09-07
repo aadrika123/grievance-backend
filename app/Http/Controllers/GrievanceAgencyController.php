@@ -182,36 +182,39 @@ class GrievanceAgencyController extends Controller
             $mApiMaster     = new ApiMaster();
             $confModuleIds  = $this->_moduleIds;
 
-            $listOfModule = $mModuleMaster->getModuleList();
+            $listOfModule = $mModuleMaster->getModuleList()->get();
             $moduleIds = collect($listOfModule)->pluck('id');
-            if (in_array($moduleId, $moduleIds->toArray())) {
+            if (!in_array($moduleId, $moduleIds->toArray())) {
                 throw new Exception("Provided module Id $moduleId is invalid!");
             }
 
             $transferData = [
                 "auth" => $request->auth,
-                "userId" => $userId
+                "citizenId" => 61
             ];
             switch ($moduleId) {
                 case ($confModuleIds['WATER']):
-                    $endPoint = "water_endpoint";
+                    $endPoint = "http://192.168.0.240:84/api/water/grievance/get-user-transactions";
                     break;
                 case ($confModuleIds['PROPERTY']):
                     $endPoint = "prop_endpoint";
                     break;
                 case ($confModuleIds['TRADE']):
-                    $endPoint = "trade_endpoint";
+                    $endPoint = "192.168.0.211:8002/api/trade/application/citizen-history";
                     break;
             }
 
             # Calling api process
             $rawData = Http::withHeaders([
-                'Authorization' => "Bearer" . collect($request->all())['token'],
-            ])
-                ->post("$endPoint", $transferData);
+                'Authorization' => "Bearer " . "4716|I0JgiL4O5pwk2UyCkURr4IdWeKevLXI2L9xBflez" //collect($request->all())['token'],
+            ])->post("$endPoint", $transferData);
 
-            $userDetails = [];
-            return responseMsgs(true, "User transaction details in !", $userDetails, "", "01", responseTime(), $request->getMethod(), $request->deviceId);
+            $rawResponseData = json_decode($rawData);
+
+            # loping concept for transaction details 
+            # fix the format for data 
+
+            return responseMsgs(true, "User transaction details in !", [], "", "01", responseTime(), $request->getMethod(), $request->deviceId);
         } catch (Exception $e) {
             return responseMsgs(false, $e->getMessage(), [], "", "01", responseTime(), $request->getMethod(), $request->deviceId);
         }
@@ -299,6 +302,144 @@ class GrievanceAgencyController extends Controller
 
         return ($finalizeQuestion->filter())->toArray();
     }
+
+
+    /**
+     * | Get details of user applications
+        | Serial No :
+        | Under Con
+        | Data filteration of raw data from http is req. hence the key may be diff 
+     */
+    public function getUserApplicationList(Request $request)
+    {
+        $validated = Validator::make(
+            $request->all(),
+            [
+                "citizenId" => "required|numeric",
+                "moduleId" => "required"
+            ]
+        );
+        if ($validated->fails()) {
+            return validationError($validated);
+        }
+
+        try {
+            # Variable assigning
+            $citizenId      = $request->userId;
+            $moduleId       = $request->moduleId;
+            $mModuleMaster  = new ModuleMaster();
+            $mApiMaster     = new ApiMaster();
+            $confModuleIds  = $this->_moduleIds;
+
+            # Check the existence of module 
+            $listOfModule = $mModuleMaster->getModuleList()->get();
+            $moduleIds = collect($listOfModule)->pluck('id');
+            if (!in_array($moduleId, $moduleIds->toArray())) {
+                throw new Exception("Provided module Id $moduleId is invalid!");
+            }
+
+            # Http paylode
+            $transferData = [
+                "auth"      => $request->auth,
+                "citizenId" => $citizenId
+            ];
+            # distinguishing the module wise API 
+            switch ($moduleId) {
+                case ($confModuleIds['WATER']):
+                    $endPoint = "http://192.168.0.240:84/api/water/application/get-user-transactions";
+                    break;
+                case ($confModuleIds['PROPERTY']):
+                    $endPoint = "prop_endpoint";
+                    break;
+                case ($confModuleIds['TRADE']):
+                    $endPoint = "192.168.0.211:8002/api/trade/application/citizen-application-list";
+                    break;
+            }
+            $httpResponse = $this->launchHttpRequest($endPoint, $transferData);
+            $returnData = $httpResponse->data;
+            # Data filteration is reqired for the raw data 
+            return responseMsgs(true, "User Application details in !", $returnData, "", "01", responseTime(), $request->getMethod(), $request->deviceId);
+        } catch (Exception $e) {
+            return responseMsgs(false, $e->getMessage(), [], "", "01", responseTime(), $request->getMethod(), $request->deviceId);
+        }
+    }
+
+
+    /**
+     * | Common function for calling http request 
+        | Serial No :
+        | Under Con :
+     */
+    public function launchHttpRequest($endPoint, $transferData)
+    {
+        $rawData = Http::withHeaders([
+            'Authorization' => "Bearer " . "4716|I0JgiL4O5pwk2UyCkURr4IdWeKevLXI2L9xBflez" //collect($request->all())['token'],
+        ])->post("$endPoint", $transferData);
+
+        $httpReqData = json_decode($rawData);
+        if ($httpReqData->status == false) {
+            throw new Exception($httpReqData->message ?? "Error in calling Http request!");
+        }
+        return $httpReqData;
+    }
+
+
+    /**
+     * | Get User's Application full details 
+        | Serial No :
+        | Under Con :  
+     */
+    // public function getUserApplicationDetails(Request $request)
+    // {
+    //     $validated = Validator::make(
+    //         $request->all(),
+    //         [
+    //             "citizenId" => "required|numeric",
+    //             "moduleId" => "required"
+    //         ]
+    //     );
+    //     if ($validated->fails()) {
+    //         return validationError($validated);
+    //     }
+
+    //     try {
+    //         # Variable assigning
+    //         $citizenId      = $request->userId;
+    //         $moduleId       = $request->moduleId;
+    //         $mModuleMaster  = new ModuleMaster();
+    //         $mApiMaster     = new ApiMaster();
+    //         $confModuleIds  = $this->_moduleIds;
+
+    //         # Check the existence of module 
+    //         $listOfModule = $mModuleMaster->getModuleList()->get();
+    //         $moduleIds = collect($listOfModule)->pluck('id');
+    //         if (!in_array($moduleId, $moduleIds->toArray())) {
+    //             throw new Exception("Provided module Id $moduleId is invalid!");
+    //         }
+
+    //         # Http paylode
+    //         $transferData = [
+    //             "auth"      => $request->auth,
+    //             "citizenId" => $citizenId
+    //         ];
+    //         # distinguishing the module wise API 
+    //         switch ($moduleId) {
+    //             case ($confModuleIds['WATER']):
+    //                 $endPoint = "http://192.168.0.240:84/api/water/application/get-user-transactions";
+    //                 break;
+    //             case ($confModuleIds['PROPERTY']):
+    //                 $endPoint = "prop_endpoint";
+    //                 break;
+    //             case ($confModuleIds['TRADE']):
+    //                 $endPoint = "192.168.0.211:8002/api/trade/application/citizen-application-list";
+    //                 break;
+    //         }
+    //         $httpResponse = $this->launchHttpRequest($endPoint, $transferData);
+    //         $returnData = $httpResponse->data;
+    //         # Data filteration is reqired for the raw data 
+    //         return responseMsgs(true, "User Application details in !", $returnData, "", "01", responseTime(), $request->getMethod(), $request->deviceId);
+    // }
+
 
 
 
