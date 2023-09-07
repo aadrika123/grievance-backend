@@ -444,70 +444,66 @@ class GrievanceAgencyController extends Controller
         });
         return $filteredData->toArray();
     }
-
-
-
-
-
+    
 
     /**
      * | Get User's Application full details 
         | Serial No :
         | Under Con :  
      */
-    // public function getUserApplicationDetails(Request $request)
-    // {
-    //     $validated = Validator::make(
-    //         $request->all(),
-    //         [
-    //             "citizenId" => "required|numeric",
-    //             "moduleId" => "required"
-    //         ]
-    //     );
-    //     if ($validated->fails()) {
-    //         return validationError($validated);
-    //     }
+    public function getUserApplicationDetails(Request $request)
+    {
+        $validated = Validator::make(
+            $request->all(),
+            [
+                "id" => "required|numeric",
+                "moduleId" => "required"
+            ]
+        );
+        if ($validated->fails()) {
+            return validationError($validated);
+        }
 
-    //     try {
-    //         # Variable assigning
-    //         $citizenId      = $request->userId;
-    //         $moduleId       = $request->moduleId;
-    //         $mModuleMaster  = new ModuleMaster();
-    //         $mApiMaster     = new ApiMaster();
-    //         $confModuleIds  = $this->_moduleIds;
+        try {
+            # Variable assigning
+            $applicationId  = $request->id;
+            $moduleId       = $request->moduleId;
+            $mModuleMaster  = new ModuleMaster();
+            $mApiMaster     = new ApiMaster();
+            $confModuleIds  = $this->_moduleIds;
 
-    //         # Check the existence of module 
-    //         $listOfModule = $mModuleMaster->getModuleList()->get();
-    //         $moduleIds = collect($listOfModule)->pluck('id');
-    //         if (!in_array($moduleId, $moduleIds->toArray())) {
-    //             throw new Exception("Provided module Id $moduleId is invalid!");
-    //         }
+            # Check the existence of module 
+            $listOfModule = $mModuleMaster->getModuleList()->get();
+            $moduleIds = collect($listOfModule)->pluck('id');
+            if (!in_array($moduleId, $moduleIds->toArray())) {
+                throw new Exception("Provided module Id $moduleId is invalid!");
+            }
 
-    //         # Http paylode
-    //         $transferData = [
-    //             "auth"      => $request->auth,
-    //             "id"        => 61
-    //         ];
-    //         # distinguishing the module wise API 
-    //         switch ($moduleId) {
-    //             case ($confModuleIds['WATER']):
-    //                 $endPoint = "http://192.168.0.240:84/api/water/application/get-user-transactions";
-    //                 break;
-    //             case ($confModuleIds['PROPERTY']):
-    //                 $endPoint = "prop_endpoint";
-    //                 break;
-    //             case ($confModuleIds['TRADE']):
-    //                 $endPoint = "192.168.0.211:8002//api/trade/application/status";
-    //                 break;
-    //         }
-    //         $httpResponse = $this->launchHttpRequest($endPoint, $transferData);
-    //         $returnData = $httpResponse->data;
-    //         # Data filteration is reqired for the raw data 
-    //         return responseMsgs(true, "User Application details in !", $returnData, "", "01", responseTime(), $request->getMethod(), $request->deviceId);
-    //     } catch (Exception $e) {
-    //         return responseMsgs(false, $e->getMessage(), [], "", "01", responseTime(), $request->getMethod(), $request->deviceId);
-    //     }
-    // }
+            # Http paylode
+            $transferData = [
+                "auth"      => $request->auth,
+                "id"        => $applicationId
+            ];
+            # distinguishing the module wise API 
+            switch ($moduleId) {
+                case ($confModuleIds['WATER']):
+                    $endPoint = "http://192.168.0.240:84/api/water/application/status";
+                    break;
+                case ($confModuleIds['PROPERTY']):
+                    $endPoint = "prop_endpoint";
+                    break;
+                case ($confModuleIds['TRADE']):
+                    $endPoint = "192.168.0.211:8002/api/trade/application/status";
+                    break;
+            }
+            $httpResponse = $this->launchHttpRequest($endPoint, $transferData);
+            $returnData = $httpResponse->data;
+            # Data filteration is reqired for the raw data 
+            return responseMsgs(true, "User Application details in !", $returnData, "", "01", responseTime(), $request->getMethod(), $request->deviceId);
+        } catch (Exception $e) {
+            return responseMsgs(false, $e->getMessage(), [], "", "01", responseTime(), $request->getMethod(), $request->deviceId);
+        }
+    }
 
 
 
