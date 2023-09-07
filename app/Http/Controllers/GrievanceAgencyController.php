@@ -325,7 +325,7 @@ class GrievanceAgencyController extends Controller
 
         try {
             # Variable assigning
-            $citizenId      = $request->userId;
+            $citizenId      = $request->citizenId;
             $moduleId       = $request->moduleId;
             $mModuleMaster  = new ModuleMaster();
             $mApiMaster     = new ApiMaster();
@@ -346,7 +346,7 @@ class GrievanceAgencyController extends Controller
             # distinguishing the module wise API 
             switch ($moduleId) {
                 case ($confModuleIds['WATER']):
-                    $endPoint = "http://192.168.0.240:84/api/water/application/get-user-transactions";
+                    $endPoint = "http://192.168.0.240:84/api/water/application/citizen-application-list";
                     break;
                 case ($confModuleIds['PROPERTY']):
                     $endPoint = "prop_endpoint";
@@ -377,6 +377,9 @@ class GrievanceAgencyController extends Controller
         ])->post("$endPoint", $transferData);
 
         $httpReqData = json_decode($rawData);
+        if (!$httpReqData) {
+            throw new Exception("Data not found or the api not responding!");
+        }
         if ($httpReqData->status == false) {
             throw new Exception($httpReqData->message ?? "Error in calling Http request!");
         }
@@ -420,7 +423,7 @@ class GrievanceAgencyController extends Controller
     //         # Http paylode
     //         $transferData = [
     //             "auth"      => $request->auth,
-    //             "citizenId" => $citizenId
+    //             "id"        => 61
     //         ];
     //         # distinguishing the module wise API 
     //         switch ($moduleId) {
@@ -431,13 +434,16 @@ class GrievanceAgencyController extends Controller
     //                 $endPoint = "prop_endpoint";
     //                 break;
     //             case ($confModuleIds['TRADE']):
-    //                 $endPoint = "192.168.0.211:8002/api/trade/application/citizen-application-list";
+    //                 $endPoint = "192.168.0.211:8002//api/trade/application/status";
     //                 break;
     //         }
     //         $httpResponse = $this->launchHttpRequest($endPoint, $transferData);
     //         $returnData = $httpResponse->data;
     //         # Data filteration is reqired for the raw data 
     //         return responseMsgs(true, "User Application details in !", $returnData, "", "01", responseTime(), $request->getMethod(), $request->deviceId);
+    //     } catch (Exception $e) {
+    //         return responseMsgs(false, $e->getMessage(), [], "", "01", responseTime(), $request->getMethod(), $request->deviceId);
+    //     }
     // }
 
 
