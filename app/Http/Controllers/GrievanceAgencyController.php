@@ -347,16 +347,22 @@ class GrievanceAgencyController extends Controller
             switch ($moduleId) {
                 case ($confModuleIds['WATER']):
                     $endPoint = "http://192.168.0.240:84/api/water/application/citizen-application-list";
+                    $httpResponse = $this->launchHttpRequest($endPoint, $transferData);
+                    $unstructuredData = $httpResponse->data;
+                    $returnData = $this->structureDataForWater($unstructuredData);
                     break;
                 case ($confModuleIds['PROPERTY']):
                     $endPoint = "prop_endpoint";
                     break;
                 case ($confModuleIds['TRADE']):
                     $endPoint = "192.168.0.211:8002/api/trade/application/citizen-application-list";
+                    $httpResponse = $this->launchHttpRequest($endPoint, $transferData);
+                    $unstructuredData = $httpResponse->data;
+                    $returnData = $this->structureDataForTrade($unstructuredData);
                     break;
             }
-            $httpResponse = $this->launchHttpRequest($endPoint, $transferData);
-            $returnData = $httpResponse->data;
+
+
             # Data filteration is reqired for the raw data 
             return responseMsgs(true, "User Application details in !", $returnData, "", "01", responseTime(), $request->getMethod(), $request->deviceId);
         } catch (Exception $e) {
@@ -385,6 +391,63 @@ class GrievanceAgencyController extends Controller
         }
         return $httpReqData;
     }
+
+
+    /**
+     * | get the data in structured format for display
+        | Serial No :
+        | Under Con
+     */
+    public function structureDataForWater($unstructuredData)
+    {
+        $filteredData = collect($unstructuredData)->map(function ($value) {
+            return [
+                "id"                => $value->id,
+                "applicationNo"     => $value->application_no,
+                "applyDate"         => $value->apply_date,
+                "applicationType"   => $value->connectionTypeName,
+                "ownerName"         => $value->applicantname,
+                "guardianName"      => $value->guardianname,
+                "email"             => "",
+                "paymentStatus"     => $value->payment_status,
+                "docUploadStatus"   => $value->doc_upload_status,
+                "currentRole"       => $value->currentRoleName ?? "",
+                "fieldVerified"     => $value->is_field_verified,
+                "propType"          => $value->property_no_type,
+            ];
+        });
+        return $filteredData->toArray();
+    }
+
+    /**
+     * | Structure the trade raw data
+        | Serial No : 
+        | Under Con 
+     */
+    public function structureDataForTrade($unstructuredData)
+    {
+        $filteredData = collect($unstructuredData)->map(function ($value) {
+            return [
+                "id"                => $value->id,
+                "applicationNo"     => $value->application_no,
+                "applyDate"         => $value->application_date,
+                "applicationType"   => $value->application_type,
+                "ownerName"         => $value->owner_name,
+                "guardianName"      => $value->guardian_name,
+                "email"             => $value->email_id,
+                "paymentStatus"     => $value->payment_status,
+                "docUploadStatus"   => $value->document_upload_status,
+                "currentRole"       => $value->currentRoleName ?? "",
+                "fieldVerified"     => $value->pending_status ?? "",
+                "propType"          => $value->license_type ?? "",
+            ];
+        });
+        return $filteredData->toArray();
+    }
+
+
+
+
 
 
     /**
