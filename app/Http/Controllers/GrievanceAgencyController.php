@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Http;
+use PHPUnit\TextUI\Configuration\Merger;
 
 use function PHPUnit\Framework\isNull;
 
@@ -542,7 +543,7 @@ class GrievanceAgencyController extends Controller
         $validated = Validator::make(
             $request->all(),
             [
-                "question"  => "required",
+                "question"  => "required|",
                 "moduleId"  => "required",
                 "pages"     => "nullable|int"
             ]
@@ -551,18 +552,29 @@ class GrievanceAgencyController extends Controller
             return validationError($validated);
         }
         try {
+            $words = explode(' ', $request->question);
+            $wordCount = count($words);
+            if ($wordCount <= 3) {
+                return response()->json([
+                    'status'    => false,
+                    'message'   => "Validation Error!",
+                    'error'     => ["question" => ["The question should contain atleast three words!."]]
+                ], 422);
+            }
             $msg = "List of Questions!";
             $pages = $request->pages > 50 || !$request->pages ? $pages = 10 : $pages = $request->pages;
             $mMGrievanceQuestion = new MGrievanceQuestion();
 
             # Querry for search
-            $questionList = $mMGrievanceQuestion->searchQuestions($request->moduleId)
-                ->where('questions', 'ILIKE', '%' . $request->question . '%')
-                ->limit($pages)
-                ->get();
-            if (!collect($questionList)->last()) {
-                $msg = "Data not found!";
-            }
+            $rawSql = "SELECT *
+            FROM m_grievance_questions
+            WHERE to_tsvector('english', questions) @@ plainto_tsquery('english', '" . $request->question . "')";
+            $questionQuerry = $mMGrievanceQuestion->searchQuestions($request->moduleId);
+            $questionList = $questionQuerry->whereIn('id', function ($query) use ($rawSql) {
+                $query->select('id')
+                    ->from(DB::raw("($rawSql) as subquery"));
+            })->limit($pages)->get();
+
             return responseMsgs(true, $msg, remove_null($questionList), "", "01", responseTime(), $request->getMethod(), $request->deviceId);
         } catch (Exception $e) {
             return responseMsgs(false, $e->getMessage(), [], "", "01", responseTime(), $request->getMethod(), $request->deviceId);
