@@ -74,7 +74,6 @@ class GrievanceAgencyController extends Controller
         $this->_wfRejectedDatabase  = Config::get('grievance-constants.WF_REJECTED_DATABASE');
         $this->_condition           = Config::get('grievance-constants.CONDITION');
         $this->_solvedStatus        = Config::get('grievance-constants.SOLVED_STATUS');
-
         # Database connectivity
         $this->_DB_NAME     = "pgsql_property";
         $this->_DB          = DB::connection($this->_DB_NAME);
@@ -168,7 +167,7 @@ class GrievanceAgencyController extends Controller
         $validated = Validator::make(
             $request->all(),
             [
-                "userId" => "required|numeric",
+                "citizenId" => "required|numeric",
                 "moduleId" => "required"
             ]
         );
@@ -176,7 +175,6 @@ class GrievanceAgencyController extends Controller
             return validationError($validated);
         }
         try {
-            $userId         = $request->userId;
             $moduleId       = $request->moduleId;
             $mModuleMaster  = new ModuleMaster();
             $mApiMaster     = new ApiMaster();
@@ -189,36 +187,63 @@ class GrievanceAgencyController extends Controller
             }
 
             $transferData = [
-                "auth" => $request->auth,
-                "citizenId" => 61
+                "auth"      => $request->auth,
+                "citizenId" => $request->citizenId
             ];
             switch ($moduleId) {
                 case ($confModuleIds['WATER']):
-                    $endPoint = "http://192.168.0.240:84/api/water/grievance/get-user-transactions";
+                    $endPoint = "192.168.0.240:84/api/water/grievance/get-user-transactions";
+                    $httpResponse = $this->launchHttpRequest($endPoint, $transferData);
+                    $unstructuredData = $httpResponse->data;
+                    $returnData = $this->structureWaterTranData($unstructuredData);
                     break;
                 case ($confModuleIds['PROPERTY']):
                     $endPoint = "prop_endpoint";
                     break;
                 case ($confModuleIds['TRADE']):
                     $endPoint = "192.168.0.211:8002/api/trade/application/citizen-history";
+                    $httpResponse = $this->launchHttpRequest($endPoint, $transferData);
+                    return $unstructuredData = $httpResponse->data;
+                    $returnData = $this->structureTradeTranData($unstructuredData);
+                    break;
+                default:
+                    throw new Exception("Module dont exist!");
                     break;
             }
-
-            # Calling api process
-            $rawData = Http::withHeaders([
-                'Authorization' => "Bearer " . "4716|I0JgiL4O5pwk2UyCkURr4IdWeKevLXI2L9xBflez" //collect($request->all())['token'],
-            ])->post("$endPoint", $transferData);
-
-            $rawResponseData = json_decode($rawData);
-
             # loping concept for transaction details 
-            # fix the format for data 
+            # fix the format for data
 
-            return responseMsgs(true, "User transaction details in !", [], "", "01", responseTime(), $request->getMethod(), $request->deviceId);
+
+            return responseMsgs(true, "User transaction details in !", $returnData, "", "01", responseTime(), $request->getMethod(), $request->deviceId);
         } catch (Exception $e) {
             return responseMsgs(false, $e->getMessage(), [], "", "01", responseTime(), $request->getMethod(), $request->deviceId);
         }
     }
+
+
+    /**
+     * | Structure the trade transaction data
+        | Serial No :
+        | Under Con
+     */
+    public function structureTradeTranData($unstructuredData)
+    {
+        if ($unstructuredData)
+            $filteredData = collect($unstructuredData)->map(function ($value) {
+                return [
+                    "id"            => $value->id,
+                    "tranNo"        => $value->application_no,
+                    "amount"        => $value->apply_date,
+                    "tranDate"      => $value->connectionTypeName,
+                    "tranType"      => $value->applicantname,
+                    "status"        => $value->guardianname,
+                    "paymentMode"   => $value
+                ];
+            });
+        return $filteredData->toArray();
+    }
+
+
 
     /**
      * | Get the recent activity details 
@@ -444,7 +469,7 @@ class GrievanceAgencyController extends Controller
         });
         return $filteredData->toArray();
     }
-    
+
 
     /**
      * | Get User's Application full details 
@@ -505,6 +530,33 @@ class GrievanceAgencyController extends Controller
         }
     }
 
+    
+    // /**
+    //  * | Search the Questions with the help of module and the question
+    //     | Serial No :
+    //     | Under Con
+    //  */
+    // public function searchMasterQuestions(Request $request)
+    // {
+    //     $validated = Validator::make(
+    //         $request->all(),
+    //         [
+    //             "question" => "required",
+    //             "moduleId" => "required|int"
+    //         ]
+    //     );
+    //     if ($validated->fails()) {
+    //         return validationError($validated);
+    //     }
+    //     try{
+    //         $mMGrievanceQuestion = new MGrievanceQuestion();
+    //         $mMGrievanceQuestion->searchQuestions($request->moduleId)->where('');
+    //     }
+    //     catch(Exception $e)
+    //     {
+    //         return responseMsgs(false, $e->getMessage(), [], "", "01", responseTime(), $request->getMethod(), $request->deviceId);
+    //     }
+    // }
 
 
 

@@ -37,9 +37,9 @@ if (!function_exists('WHATSAPPJHGOVT')) {
                                         "type" => "document",
                                         "document" => $message[0]
                                         // [
-                                        //     // "link"=> "http://www.xmlpdf.com/manualfiles/hello-world.pdf",
-                                        //     // "filename"=> "Payment Receipt.pdf"
-                                        //     // $message[0]
+                                        //     "link"=> "http://www.xmlpdf.com/manualfiles/hello-world.pdf",
+                                        //     "filename"=> "Payment Receipt.pdf"
+                                        //     $message[0]
                                         //     ]
                                     ]
                                 ]

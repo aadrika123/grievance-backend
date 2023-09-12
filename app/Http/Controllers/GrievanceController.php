@@ -319,7 +319,7 @@ class GrievanceController extends Controller
                 "$request->mobileNo",
                 "register_message",                     // Set at env or database and 
                 [
-                    "conten_type" => "text",
+                    "conten_type" => "text",            // Static
                     [
                         $request->applicantName,
                         "Grievance",                    // Static
@@ -367,7 +367,6 @@ class GrievanceController extends Controller
                 if ($validated->fails()) {
                     return validationError($validated);
                 }
-
                 if (!in_array($user->user_type, [$confUserType['4'], $confUserType['3']])) {
                     throw new Exception("You are not allowed to register Grievance!");
                 }

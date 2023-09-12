@@ -36,4 +36,14 @@ class MGrievanceQuestion extends Model
             ->where('status', true)
             ->orderByDesc('id');
     }
+
+    /**
+     * | Get the quesion using the module and question
+     */
+    public function searchQuestions($module)
+    {
+        return MGrievanceQuestion::where('status', 1)
+            ->where('module', $module)
+            ->orderByDesc('id');
+    }
 }
