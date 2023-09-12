@@ -530,33 +530,41 @@ class GrievanceAgencyController extends Controller
         }
     }
 
-    
-    // /**
-    //  * | Search the Questions with the help of module and the question
-    //     | Serial No :
-    //     | Under Con
-    //  */
-    // public function searchMasterQuestions(Request $request)
-    // {
-    //     $validated = Validator::make(
-    //         $request->all(),
-    //         [
-    //             "question" => "required",
-    //             "moduleId" => "required|int"
-    //         ]
-    //     );
-    //     if ($validated->fails()) {
-    //         return validationError($validated);
-    //     }
-    //     try{
-    //         $mMGrievanceQuestion = new MGrievanceQuestion();
-    //         $mMGrievanceQuestion->searchQuestions($request->moduleId)->where('');
-    //     }
-    //     catch(Exception $e)
-    //     {
-    //         return responseMsgs(false, $e->getMessage(), [], "", "01", responseTime(), $request->getMethod(), $request->deviceId);
-    //     }
-    // }
+
+    /**
+     * | Search the Questions with the help of module and the question
+        | Serial No :
+        | Under Con
+     */
+    public function searchMasterQuestions(Request $request)
+    {
+        $validated = Validator::make(
+            $request->all(),
+            [
+                "question"  => "required",
+                "moduleId"  => "required",
+                "pages"     => "nullable|int"
+            ]
+        );
+        if ($validated->fails()) {
+            return validationError($validated);
+        }
+        try {
+            $msg = "List of Questions!";
+            $pages = $request->pages ?? 10;
+            $mMGrievanceQuestion = new MGrievanceQuestion();
+            $questionList = $mMGrievanceQuestion->searchQuestions($request->moduleId)
+                ->where('questions', 'ILIKE', '%' . $request->question . '%')
+                ->limit($pages)
+                ->get();
+            if (!collect($questionList)->first()) {
+                $msg = "Data not found!";
+            }
+            return responseMsgs(true, $msg, remove_null($questionList), "", "01", responseTime(), $request->getMethod(), $request->deviceId);
+        } catch (Exception $e) {
+            return responseMsgs(false, $e->getMessage(), [], "", "01", responseTime(), $request->getMethod(), $request->deviceId);
+        }
+    }
 
 
 

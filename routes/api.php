@@ -31,7 +31,7 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
 
-Route::group(['middleware' => ['json.response']], function () {
+// Route::group(['middleware' => ['json.response']], function () {
 
     /** 
      * | Api for basic grievance and workflow
@@ -95,6 +95,7 @@ Route::group(['middleware' => ['json.response']], function () {
         Route::post('agency/get-question-list', 'getMasterQuestions');                          // uc
         Route::post('agency/get-grievance-list', 'getGreviancesList');                          // uc
         Route::post('agency/get-user-application-list', 'getUserApplicationList');              // w
-        Route::post('agency/get-user-application-details', 'getUserApplicationDetails');         // uc
+        Route::post('agency/get-user-application-details', 'getUserApplicationDetails');        // uc
+        Route::post('agency/search-question-list', 'searchMasterQuestions');                    // uc
     });
-});
+// });

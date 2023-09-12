@@ -43,7 +43,7 @@ class MGrievanceQuestion extends Model
     public function searchQuestions($module)
     {
         return MGrievanceQuestion::where('status', 1)
-            ->where('module', $module)
+            ->where('module_id', $module)
             ->orderByDesc('id');
     }
 }
