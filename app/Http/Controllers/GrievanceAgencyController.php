@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\Grievance\closeGrievanceReq;
+use App\Models\Grievance\GrievanceClosedQuestion;
 use App\Models\Grievance\MGrievanceQuestion;
 use App\Models\Property\PropActiveSaf;
 use App\Models\ThirdParty\ApiMaster;
@@ -564,22 +565,31 @@ class GrievanceAgencyController extends Controller
             $msg = "List of Questions!";
             $pages = $request->pages > 50 || !$request->pages ? $pages = 10 : $pages = $request->pages;
             $mMGrievanceQuestion = new MGrievanceQuestion();
-
+            $serchQuestion = str_replace(' ', '|', $request->question);
             # Querry for search
-            $rawSql = "SELECT *
-            FROM m_grievance_questions
-            WHERE to_tsvector('english', questions) @@ plainto_tsquery('english', '" . $request->question . "')";
-            $questionQuerry = $mMGrievanceQuestion->searchQuestions($request->moduleId);
-            $questionList = $questionQuerry->whereIn('id', function ($query) use ($rawSql) {
-                $query->select('id')
-                    ->from(DB::raw("($rawSql) as subquery"));
-            })->limit($pages)->get();
+            // $rawSql = "SELECT *
+            // FROM m_grievance_questions
+            // WHERE to_tsvector('english', questions) @@ plainto_tsquery('english', '" . $request->question . "')";
+            $questionList = $mMGrievanceQuestion->searchQuestions($request->moduleId)
+                ->where('questions', '~*', $serchQuestion)
+                ->limit($pages)
+                ->get();
+            // $questionList = $questionQuerry->whereIn('id', function ($query) use ($rawSql) {
+            //     $query->select('id')
+            //         ->from(DB::raw("($rawSql) as subquery"));
+            // })->limit($pages)->get();
 
             return responseMsgs(true, $msg, remove_null($questionList), "", "01", responseTime(), $request->getMethod(), $request->deviceId);
         } catch (Exception $e) {
             return responseMsgs(false, $e->getMessage(), [], "", "01", responseTime(), $request->getMethod(), $request->deviceId);
         }
     }
+
+
+    /**
+     * | Approve or post to the next level verification 
+     */
+
 
     /**
      * | Closer of Questions , Agent level process 
@@ -589,9 +599,11 @@ class GrievanceAgencyController extends Controller
     public function closerOfAgentLvGrievance(closeGrievanceReq $request)
     {
         try {
-            $msg = "Grievance Question request!";
+            $user   = authUser($request);
+            $msg    = "Grievance closed!";
+            $mGrievanceClosedQuestion = new GrievanceClosedQuestion();
 
-            // return responseMsgs(true, $msg, remove_null($questionList), "", "01", responseTime(), $request->getMethod(), $request->deviceId);
+            return responseMsgs(true, $msg, [], "", "01", responseTime(), $request->getMethod(), $request->deviceId);
         } catch (Exception $e) {
             return responseMsgs(false, $e->getMessage(), [], "", "01", responseTime(), $request->getMethod(), $request->deviceId);
         }
