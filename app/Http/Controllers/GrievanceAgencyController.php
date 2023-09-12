@@ -554,7 +554,7 @@ class GrievanceAgencyController extends Controller
         try {
             $words = explode(' ', $request->question);
             $wordCount = count($words);
-            if ($wordCount <= 3) {
+            if ($wordCount < 3) {
                 return response()->json([
                     'status'    => false,
                     'message'   => "Validation Error!",
