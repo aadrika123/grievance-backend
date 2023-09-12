@@ -552,13 +552,14 @@ class GrievanceAgencyController extends Controller
         }
         try {
             $msg = "List of Questions!";
-            $pages = $request->pages > 30 || !$request->pages ? $pages = 10 : $pages = $request->pages;
+            $pages = $request->pages > 50 || !$request->pages ? $pages = 10 : $pages = $request->pages;
             $mMGrievanceQuestion = new MGrievanceQuestion();
 
             # Querry for search
             $questionList = $mMGrievanceQuestion->searchQuestions($request->moduleId)
                 ->where('questions', 'ILIKE', '%' . $request->question . '%')
-                ->paginate($pages);
+                ->limit($pages)
+                ->get();
             if (!collect($questionList)->last() || collect($questionList)->last() == 0) {
                 $msg = "Data not found!";
             }
@@ -577,6 +578,7 @@ class GrievanceAgencyController extends Controller
     {
         try{
             $msg = "Grievance Question request!";
+
             // return responseMsgs(true, $msg, remove_null($questionList), "", "01", responseTime(), $request->getMethod(), $request->deviceId);
         }
         catch(Exception $e)
