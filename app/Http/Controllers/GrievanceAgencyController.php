@@ -560,7 +560,7 @@ class GrievanceAgencyController extends Controller
                 ->where('questions', 'ILIKE', '%' . $request->question . '%')
                 ->limit($pages)
                 ->get();
-            if (!collect($questionList)->last() || collect($questionList)->last() == 0) {
+            if (!collect($questionList)->last()) {
                 $msg = "Data not found!";
             }
             return responseMsgs(true, $msg, remove_null($questionList), "", "01", responseTime(), $request->getMethod(), $request->deviceId);
@@ -576,13 +576,11 @@ class GrievanceAgencyController extends Controller
      */
     public function closerOfAgentLvGrievance(closeGrievanceReq $request)
     {
-        try{
+        try {
             $msg = "Grievance Question request!";
 
             // return responseMsgs(true, $msg, remove_null($questionList), "", "01", responseTime(), $request->getMethod(), $request->deviceId);
-        }
-        catch(Exception $e)
-        {
+        } catch (Exception $e) {
             return responseMsgs(false, $e->getMessage(), [], "", "01", responseTime(), $request->getMethod(), $request->deviceId);
         }
     }
