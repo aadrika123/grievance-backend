@@ -1657,7 +1657,7 @@ class GrievanceController extends Controller
                 'filterBy'  => 'required|in:mobileNo,applicationNo',
                 'parameter' => 'required',
                 'condition' => 'required|in:0,1',
-                'perPage'   => 'nullable|integer'
+                'pages'     => 'nullable|integer'
             ]
         );
         if ($validated->fails())
@@ -1666,7 +1666,7 @@ class GrievanceController extends Controller
         try {
             $isActive = $request->condition;
             $msg = "List of Grievance!";
-            $perPage = $request->perPage ?? 10;
+            $pages = $request->pages ?? 10;
             $mGrievanceActiveApplicantion = new GrievanceActiveApplicantion();
             $mGrievanceRejectedApplicantion = new GrievanceRejectedApplicantion();
 
@@ -1676,12 +1676,12 @@ class GrievanceController extends Controller
                         $returnData = $mGrievanceActiveApplicantion->searchActiveGrievance()
                             ->selectRaw(DB::raw("'$isActive' as active_status"))
                             ->where('grievance_active_applicantions.mobile_no', 'LIKE', '%' . $request->parameter . '%')
-                            ->get();
+                            ->paginate($pages);
                     } else {
                         $returnData = $mGrievanceRejectedApplicantion->searchRejectedGrievance()
                             ->selectRaw(DB::raw("'$isActive' as active_status"))
                             ->where('grievance_rejected_applicantions.mobile_no', 'LIKE', '%' . $request->parameter . '%')
-                            ->get();
+                            ->paginate($pages);
                     }
                     break;
 
@@ -1690,16 +1690,16 @@ class GrievanceController extends Controller
                         $returnData = $mGrievanceActiveApplicantion->searchActiveGrievance()
                             ->selectRaw(DB::raw("'$isActive' as active_status"))
                             ->where('grievance_active_applicantions.application_no', 'LIKE', '%' . $request->parameter . '%')
-                            ->get();
+                            ->paginate($pages);
                     } else {
                         $returnData = $mGrievanceRejectedApplicantion->searchRejectedGrievance()
                             ->selectRaw(DB::raw("'$isActive' as active_status"))
                             ->where('grievance_rejected_applicantions.application_no', 'LIKE', '%' . $request->parameter . '%')
-                            ->get();
+                            ->paginate($pages);
                     }
                     break;
             }
-            if (empty($returnData->toArray())) {
+            if (!collect($returnData)->last() || collect($returnData)->last() == 0) {
                 $msg = "Data Not Found!";
             }
             return responseMsgs(true, $msg, remove_null($returnData), "", "01", responseTime(), "POST", $request->deviceId);
@@ -1720,7 +1720,7 @@ class GrievanceController extends Controller
             $request->all(),
             [
                 'mobileNo'  => 'required|numeric|digits:10',
-                'perPage'   => 'nullable|integer'
+                'pages'   => 'nullable|integer'
             ]
         );
         if ($validated->fails())
@@ -1737,19 +1737,19 @@ class GrievanceController extends Controller
             //     throw new Exception("You are not Autherised to proceed!");
             // }
 
-            $msg = "Listed grievance!";
-            $confCondition = $this->_condition;
-            $activeCondition = $confCondition['ACTIVE'];
-            $rejecetdCondition = $confCondition['REJECTED'];
-            $perPage = $request->perPage ?? 10;
-            $mGrievanceActiveApplicantion = new GrievanceActiveApplicantion();
+            $msg                = "Listed grievance!";
+            $confCondition      = $this->_condition;
+            $activeCondition    = $confCondition['ACTIVE'];
+            $rejecetdCondition  = $confCondition['REJECTED'];
+            $pages              = $request->pages ?? 10;
+
+            $mGrievanceActiveApplicantion   = new GrievanceActiveApplicantion();
             $mGrievanceRejectedApplicantion = new GrievanceRejectedApplicantion();
 
             $approvedData = $mGrievanceActiveApplicantion->searchActiveGrievance()
                 ->selectRaw(DB::raw("'$activeCondition' as active_status"))
                 ->where('grievance_active_applicantions.mobile_no', $request->mobileNo)
-                ->limit($perPage)
-                ->get();
+                ->paginate($pages);
             # Listing the rejected grievance
             // $rejectedData = $mGrievanceRejectedApplicantion->searchRejectedGrievance()
             //     ->selectRaw(DB::raw("'$rejecetdCondition' as active_status"))
@@ -1757,6 +1757,9 @@ class GrievanceController extends Controller
             //     ->limit($perPage)
             //     ->get();
             $returnData = $approvedData; // ->merge($rejectedData);
+            if (!collect($returnData)->last() || collect($returnData)->last() == 0) {
+                $msg = "Data Not Found!";
+            }
             return responseMsgs(true, $msg, remove_null($returnData), "", "01", responseTime(), "POST", $request->deviceId);
         } catch (Exception $e) {
             return responseMsgs(false, $e->getMessage(), [], "", "01", responseTime(), "POST", $request->deviceId);
@@ -1995,7 +1998,7 @@ class GrievanceController extends Controller
         $validated = Validator::make(
             $request->all(),
             [
-                'perPage'     => 'nullable|integer',
+                'pages' => 'nullable|integer',
             ]
         );
         if ($validated->fails())
@@ -2004,13 +2007,12 @@ class GrievanceController extends Controller
         try {
             $condition  = 1;
             $msg = "List of wf approved Grievance!";
-            $perPage = $request->perPage ?? 10;
+            $pages = $request->pages ?? 10;
             $mGrievanceSolvedApplicantion = new GrievanceSolvedApplicantion();
             $solvedGrievance = $mGrievanceSolvedApplicantion->getWfSolvedGrievance()
                 ->selectRaw(DB::raw("'$condition' as active_status"),)
-                ->limit($perPage)
-                ->get();
-            if (!collect($solvedGrievance)->first()) {
+                ->paginate($pages);
+            if (!collect($solvedGrievance)->last() || collect($solvedGrievance)->last() == 0) {
                 $msg = "Data not found!";
             }
             return responseMsgs(true, $msg, remove_null($solvedGrievance), '', "01", responseTime(), "POST", $request->deviceId);
@@ -2029,7 +2031,7 @@ class GrievanceController extends Controller
         $validated = Validator::make(
             $request->all(),
             [
-                'perPage'     => 'nullable|integer',
+                'pages' => 'nullable|integer',
             ]
         );
         if ($validated->fails())
@@ -2038,14 +2040,13 @@ class GrievanceController extends Controller
         try {
             $condition  = 0;
             $msg        = "List of wf rejected Grievance!";
-            $perPage    = $request->perPage ?? 10;
+            $pages      = $request->pages ?? 10;
 
             $mGrievanceRejectedApplicantion = new GrievanceRejectedApplicantion();
             $rejectedGrievance = $mGrievanceRejectedApplicantion->searchRejectedGrievance()
                 ->selectRaw(DB::raw("'$condition' as active_status"),)
-                ->limit($perPage)
-                ->get();
-            if (!collect($rejectedGrievance)->first()) {
+                ->paginate($pages);
+            if (!collect($rejectedGrievance)->last() || collect($rejectedGrievance)->last() == 0) {
                 $msg = "Data not found!";
             }
             return responseMsgs(true, $msg, remove_null($rejectedGrievance), '', "01", responseTime(), "POST", $request->deviceId);

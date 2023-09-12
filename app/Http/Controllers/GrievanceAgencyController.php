@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\Grievance\closeGrievanceReq;
 use App\Models\Grievance\MGrievanceQuestion;
 use App\Models\Property\PropActiveSaf;
 use App\Models\ThirdParty\ApiMaster;
@@ -551,17 +552,35 @@ class GrievanceAgencyController extends Controller
         }
         try {
             $msg = "List of Questions!";
-            $pages = $request->pages ?? 10;
+            $pages = $request->pages > 30 || !$request->pages ? $pages = 10 : $pages = $request->pages;
             $mMGrievanceQuestion = new MGrievanceQuestion();
+
+            # Querry for search
             $questionList = $mMGrievanceQuestion->searchQuestions($request->moduleId)
                 ->where('questions', 'ILIKE', '%' . $request->question . '%')
-                ->limit($pages)
-                ->get();
-            if (!collect($questionList)->first()) {
+                ->paginate($pages);
+            if (!collect($questionList)->last() || collect($questionList)->last() == 0) {
                 $msg = "Data not found!";
             }
             return responseMsgs(true, $msg, remove_null($questionList), "", "01", responseTime(), $request->getMethod(), $request->deviceId);
         } catch (Exception $e) {
+            return responseMsgs(false, $e->getMessage(), [], "", "01", responseTime(), $request->getMethod(), $request->deviceId);
+        }
+    }
+
+    /**
+     * | Closer of Questions , Agent level process 
+        | Serial No :
+        | Under Con :
+     */
+    public function closerOfAgentLvGrievance(closeGrievanceReq $request)
+    {
+        try{
+            $msg = "Grievance Question request!";
+            // return responseMsgs(true, $msg, remove_null($questionList), "", "01", responseTime(), $request->getMethod(), $request->deviceId);
+        }
+        catch(Exception $e)
+        {
             return responseMsgs(false, $e->getMessage(), [], "", "01", responseTime(), $request->getMethod(), $request->deviceId);
         }
     }
