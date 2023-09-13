@@ -566,19 +566,16 @@ class GrievanceAgencyController extends Controller
             $msg = "List of Questions!";
             $pages = $request->pages > 50 || !$request->pages ? $pages = 10 : $pages = $request->pages;
             $mMGrievanceQuestion = new MGrievanceQuestion();
-            $serchQuestion = str_replace(' ', '|', $request->question);
+
             # Querry for search
-            // $rawSql = "SELECT *
-            // FROM m_grievance_questions
-            // WHERE to_tsvector('english', questions) @@ plainto_tsquery('english', '" . $request->question . "')";
-            $questionList = $mMGrievanceQuestion->searchQuestions($request->moduleId)
-                ->where('questions', '~*', $serchQuestion)
-                ->limit($pages)
-                ->get();
-            // $questionList = $questionQuerry->whereIn('id', function ($query) use ($rawSql) {
-            //     $query->select('id')
-            //         ->from(DB::raw("($rawSql) as subquery"));
-            // })->limit($pages)->get();
+            $rawSql = "SELECT *
+            FROM m_grievance_questions
+            WHERE to_tsvector('english', questions) @@ plainto_tsquery('english', '" . $request->question . "')";
+            $questionQuerry = $mMGrievanceQuestion->searchQuestions($request->moduleId);
+            $questionList = $questionQuerry->whereIn('id', function ($query) use ($rawSql) {
+                $query->select('id')
+                    ->from(DB::raw("($rawSql) as subquery"));
+            })->limit($pages)->get();
 
             return responseMsgs(true, $msg, remove_null($questionList), "", "01", responseTime(), $request->getMethod(), $request->deviceId);
         } catch (Exception $e) {
@@ -599,7 +596,7 @@ class GrievanceAgencyController extends Controller
 
             $this->begin();
             switch ($request->status) {
-                case (1):
+                case ('yes'):
                     $msg = "Grievance closed!";
                     $request->merge([
                         "applyDate" => $request->applyDate ?? $now,
@@ -610,14 +607,15 @@ class GrievanceAgencyController extends Controller
                     $mGrievanceClosedQuestion->saveClosedQuestionData($request, null);
                     break;
 
-                case (0):
+                case ("no"):
                     $msg = "Grievance Passed to wf for solution!";
                     $status = 2;                                                // Static
                     $request->merge([
-                        "applyDate" => $request->applyDate,
-                        "closeDate" => null,
-                        "initiator" => $user->id,
-                        "finisher"  => null,
+                        "applyDate"     => $request->applyDate,
+                        "closeDate"     => null,
+                        "initiator"     => $user->id,
+                        "finisher"      => null,
+                        "inWorkflow"    => 1                                    // Static
                     ]);
                     $mGrievanceClosedQuestion->saveClosedQuestionData($request, $status);
                     break;

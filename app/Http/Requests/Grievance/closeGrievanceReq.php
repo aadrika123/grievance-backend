@@ -26,8 +26,9 @@ class closeGrievanceReq extends FormRequest
         $rules["question"]  = 'required|';
         $rules["moduleId"]  = 'required|int';
         $rules["userId"]    = 'required|integer';
-        $rules["status"]    = 'required|in:0,1';                                // 0:pass/false,1:close/true   
+        $rules["status"]    = 'required|in:yes,no';                                // 0:pass/false,1:close/true   
         $rules["applyDate"] = 'nullable';
+        $rules["remarks"]   = 'nullable';
         return $rules;
     }
     protected function failedValidation(Validator $validator)
