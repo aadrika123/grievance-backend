@@ -11,14 +11,14 @@ use App\Models\User;
 use App\Models\Workflow\ModuleMaster;
 use App\Traits\GrievanceTrait;
 use App\Traits\Workflow\Workflow;
+use Carbon\Carbon;
 use Exception;
 use Illuminate\Http\Request;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Http;
-use PHPUnit\TextUI\Configuration\Merger;
+use Symfony\Component\CssSelector\Node\FunctionNode;
 
 use function PHPUnit\Framework\isNull;
 
@@ -206,7 +206,7 @@ class GrievanceAgencyController extends Controller
                 case ($confModuleIds['TRADE']):
                     $endPoint = "192.168.0.211:8002/api/trade/application/citizen-history";
                     $httpResponse = $this->launchHttpRequest($endPoint, $transferData);
-                    return $unstructuredData = $httpResponse->data;
+                    $unstructuredData = $httpResponse->data;
                     $returnData = $this->structureTradeTranData($unstructuredData);
                     break;
                 default:
@@ -381,6 +381,7 @@ class GrievanceAgencyController extends Controller
                     break;
                 case ($confModuleIds['PROPERTY']):
                     $endPoint = "prop_endpoint";
+                    $returnData = "Data from property is not maped!";
                     break;
                 case ($confModuleIds['TRADE']):
                     $endPoint = "192.168.0.211:8002/api/trade/application/citizen-application-list";
@@ -589,6 +590,45 @@ class GrievanceAgencyController extends Controller
     /**
      * | Approve or post to the next level verification 
      */
+    public function closePassGrievance(closeGrievanceReq $request)
+    {
+        try {
+            $now    = Carbon::now();
+            $user   = authUser($request);
+            $mGrievanceClosedQuestion = new GrievanceClosedQuestion();
+
+            $this->begin();
+            switch ($request->status) {
+                case (1):
+                    $msg = "Grievance closed!";
+                    $request->merge([
+                        "applyDate" => $request->applyDate ?? $now,
+                        "closeDate" => $now,
+                        "initiator" => $user->id,
+                        "finisher"  => $user->id,
+                    ]);
+                    $mGrievanceClosedQuestion->saveClosedQuestionData($request, null);
+                    break;
+
+                case (0):
+                    $msg = "Grievance Passed to wf for solution!";
+                    $status = 2;                                                // Static
+                    $request->merge([
+                        "applyDate" => $request->applyDate,
+                        "closeDate" => null,
+                        "initiator" => $user->id,
+                        "finisher"  => null,
+                    ]);
+                    $mGrievanceClosedQuestion->saveClosedQuestionData($request, $status);
+                    break;
+            }
+            $this->commit();
+            return responseMsgs(true, $msg, [], "", "01", responseTime(), $request->getMethod(), $request->deviceId);
+        } catch (Exception $e) {
+            $this->rollback();
+            return responseMsgs(false, $e->getMessage(), [], "", "01", responseTime(), $request->getMethod(), $request->deviceId);
+        }
+    }
 
 
     /**
@@ -596,14 +636,9 @@ class GrievanceAgencyController extends Controller
         | Serial No :
         | Under Con :
      */
-    public function closerOfAgentLvGrievance(closeGrievanceReq $request)
+    public function closerOfAgentLvGrievance($request)
     {
         try {
-            $user   = authUser($request);
-            $msg    = "Grievance closed!";
-            $mGrievanceClosedQuestion = new GrievanceClosedQuestion();
-
-            return responseMsgs(true, $msg, [], "", "01", responseTime(), $request->getMethod(), $request->deviceId);
         } catch (Exception $e) {
             return responseMsgs(false, $e->getMessage(), [], "", "01", responseTime(), $request->getMethod(), $request->deviceId);
         }

@@ -3,6 +3,8 @@
 namespace App\Http\Requests\Grievance;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Contracts\Validation\Validator;
+use Illuminate\Http\Exceptions\HttpResponseException;
 
 class closeGrievanceReq extends FormRequest
 {
@@ -19,10 +21,26 @@ class closeGrievanceReq extends FormRequest
      *
      * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array|string>
      */
-    public function rules(): array
+    public function rules()
     {
-        return [
-            //
-        ];
+        $rules["question"]  = 'required|';
+        $rules["moduleId"]  = 'required|int';
+        $rules["userId"]    = 'required|integer';
+        $rules["status"]    = 'required|in:0,1';                                // 0:pass/false,1:close/true   
+        $rules["applyDate"] = 'nullable';
+        return $rules;
+    }
+    protected function failedValidation(Validator $validator)
+    {
+        throw new HttpResponseException(
+            response()->json(
+                [
+                    'status'   => false,
+                    'message'  => 'The given data was invalid',
+                    'errors'   => $validator->errors()
+                ],
+                422
+            )
+        );
     }
 }
