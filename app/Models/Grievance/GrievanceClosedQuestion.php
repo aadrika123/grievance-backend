@@ -28,6 +28,7 @@ class GrievanceClosedQuestion extends Model
         $mGrievanceClosedQuestion->remarks              = $request->remarks ?? "";
         $mGrievanceClosedQuestion->finisher             = $request->finisher;
         $mGrievanceClosedQuestion->is_in_workflow       = $request->inWorkflow ?? 0;
+        $mGrievanceClosedQuestion->priority             = $request->priority;
         $mGrievanceClosedQuestion->save();
     }
 }

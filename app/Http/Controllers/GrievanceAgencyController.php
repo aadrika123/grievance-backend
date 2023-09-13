@@ -615,7 +615,8 @@ class GrievanceAgencyController extends Controller
                         "closeDate"     => null,
                         "initiator"     => $user->id,
                         "finisher"      => null,
-                        "inWorkflow"    => 1                                    // Static
+                        "inWorkflow"    => 1,                                   // Static
+                        "priority"      => $request->setPriority
                     ]);
                     $mGrievanceClosedQuestion->saveClosedQuestionData($request, $status);
                     break;
@@ -629,18 +630,7 @@ class GrievanceAgencyController extends Controller
     }
 
 
-    /**
-     * | Closer of Questions , Agent level process 
-        | Serial No :
-        | Under Con :
-     */
-    public function closerOfAgentLvGrievance($request)
-    {
-        try {
-        } catch (Exception $e) {
-            return responseMsgs(false, $e->getMessage(), [], "", "01", responseTime(), $request->getMethod(), $request->deviceId);
-        }
-    }
+
 
 
 

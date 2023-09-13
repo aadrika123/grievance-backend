@@ -23,12 +23,13 @@ class closeGrievanceReq extends FormRequest
      */
     public function rules()
     {
-        $rules["question"]  = 'required|';
-        $rules["moduleId"]  = 'required|int';
-        $rules["userId"]    = 'required|integer';
-        $rules["status"]    = 'required|in:yes,no';                                // 0:pass/false,1:close/true   
-        $rules["applyDate"] = 'nullable';
-        $rules["remarks"]   = 'nullable';
+        $rules["question"]      = 'required|';
+        $rules["moduleId"]      = 'required|int';
+        $rules["userId"]        = 'required|integer';
+        $rules["status"]        = 'required|in:yes,no';                                // 0:pass/false,1:close/true   
+        $rules["applyDate"]     = 'nullable';
+        $rules["remarks"]       = 'nullable';
+        $rukes["setPriority"]   = 'hullable|in:1,2,3,4,5';
         return $rules;
     }
     protected function failedValidation(Validator $validator)
