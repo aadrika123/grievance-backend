@@ -42,7 +42,7 @@ class GrievanceActiveApplicantion extends Model
         $mGrievanceActiveApplicantion->user_id              = $refRequest['userId'];
         $mGrievanceActiveApplicantion->user_type            = $refRequest['userType'];
         $mGrievanceActiveApplicantion->reopen_count         = $refRequest['reopenCount'] ?? 0;
-        $mGrievanceActiveApplicantion->current_role         = $refRequest['initiatorRoleId'] ?? null;
+        $mGrievanceActiveApplicantion->current_role         = $refRequest['refInitiatorRoleId'] ?? null;
         $mGrievanceActiveApplicantion->save();
         return [
             "id" => $mGrievanceActiveApplicantion->id,

@@ -2269,13 +2269,14 @@ class GrievanceController extends Controller
             $this->begin();
             $applicationNo  = "GRE" . Str::random(10) . "RE";
             $refRequest = [
-                "applicationNo"     => $applicationNo,
-                "initiatorRoleId"   => $applicationDetails->initiator_id,
-                "finisherRoleId"    => $applicationDetails->finisher_id,
-                "workflowId"        => $applicationDetails->workflow_id,
-                "userId"            => $user->id,
-                "userType"          => $user->user_type,
-                "reopenCount"       => $applicationDetails->reopen_count + 1
+                "applicationNo"         => $applicationNo,
+                "initiatorRoleId"       => $applicationDetails->initiator_id,
+                "refInitiatorRoleId"    => $applicationDetails->initiator_id,
+                "finisherRoleId"        => $applicationDetails->finisher_id,
+                "workflowId"            => $applicationDetails->workflow_id,
+                "userId"                => $user->id,
+                "userType"              => $user->user_type,
+                "reopenCount"           => $applicationDetails->reopen_count + 1
 
             ];
             $refDetails = new Request([
