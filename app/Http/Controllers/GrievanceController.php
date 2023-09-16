@@ -1655,7 +1655,7 @@ class GrievanceController extends Controller
         $validated  = Validator::make(
             $request->all(),
             [
-                'filterBy'  => 'required|in:mobileNo,applicationNo',
+                'filterBy'  => 'required|in:mobileNo,applicationNo,applicantName',
                 'parameter' => 'required',
                 'condition' => 'required|in:0,1',
                 'pages'     => 'nullable|integer'
@@ -1682,6 +1682,20 @@ class GrievanceController extends Controller
                         $returnData = $mGrievanceRejectedApplicantion->searchRejectedGrievance()
                             ->selectRaw(DB::raw("'$isActive' as active_status"))
                             ->where('grievance_rejected_applicantions.mobile_no', 'LIKE', '%' . $request->parameter . '%')
+                            ->paginate($pages);
+                    }
+                    break;
+
+                case ("applicantName"):
+                    if ($request->condition == 1) {
+                        $returnData = $mGrievanceActiveApplicantion->searchActiveGrievance()
+                            ->selectRaw(DB::raw("'$isActive' as active_status"))
+                            ->where('grievance_active_applicantions.applicant_name', 'LIKE', '%' . $request->parameter . '%')
+                            ->paginate($pages);
+                    } else {
+                        $returnData = $mGrievanceRejectedApplicantion->searchRejectedGrievance()
+                            ->selectRaw(DB::raw("'$isActive' as active_status"))
+                            ->where('grievance_rejected_applicantions.applicant_name', 'LIKE', '%' . $request->parameter . '%')
                             ->paginate($pages);
                     }
                     break;
