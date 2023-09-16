@@ -1690,12 +1690,12 @@ class GrievanceController extends Controller
                     if ($request->condition == 1) {
                         $returnData = $mGrievanceActiveApplicantion->searchActiveGrievance()
                             ->selectRaw(DB::raw("'$isActive' as active_status"))
-                            ->where('grievance_active_applicantions.applicant_name', 'LIKE', '%' . $request->parameter . '%')
+                            ->where('grievance_active_applicantions.applicant_name', 'ILIKE', '%' . $request->parameter . '%')
                             ->paginate($pages);
                     } else {
                         $returnData = $mGrievanceRejectedApplicantion->searchRejectedGrievance()
                             ->selectRaw(DB::raw("'$isActive' as active_status"))
-                            ->where('grievance_rejected_applicantions.applicant_name', 'LIKE', '%' . $request->parameter . '%')
+                            ->where('grievance_rejected_applicantions.applicant_name', 'ILIKE', '%' . $request->parameter . '%')
                             ->paginate($pages);
                     }
                     break;
