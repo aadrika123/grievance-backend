@@ -64,7 +64,7 @@ class GrievanceRejectedApplicantion extends Model
             'grievance_rejected_applicantions.user_apply_through',
             'grievance_rejected_applicantions.inner_workflow_id',
             'grievance_rejected_applicantions.workflow_id',
-            'm_grievance_apply_through.apply_through_name',
+            'm_grievance_apply_throughs.apply_through_name',
             DB::raw("(SELECT wf_masters.id FROM wf_masters 
                 JOIN wf_workflows ON wf_masters.id = wf_workflows.wf_master_id
                 WHERE wf_workflows.id = grievance_rejected_applicantions.workflow_id) as workflow_mstr_id"),
@@ -72,7 +72,7 @@ class GrievanceRejectedApplicantion extends Model
                 JOIN wf_workflows ON wf_masters.id = wf_workflows.wf_master_id
                 WHERE wf_workflows.id = grievance_rejected_applicantions.inner_workflow_id) as inner_workflow_mstr_id")
         )
-            ->join('m_grievance_apply_through', 'm_grievance_apply_through.id', 'grievance_rejected_applicantions.user_apply_through')
+            ->join('m_grievance_apply_throughs', 'm_grievance_apply_throughs.id', 'grievance_rejected_applicantions.user_apply_through')
             ->where('grievance_rejected_applicantions.status', 1);
     }
 }
