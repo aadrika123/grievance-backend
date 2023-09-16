@@ -41,8 +41,9 @@ class GrievanceActiveApplicantion extends Model
         $mGrievanceActiveApplicantion->apply_date           = Carbon::now();                        // Static
         $mGrievanceActiveApplicantion->user_id              = $refRequest['userId'];
         $mGrievanceActiveApplicantion->user_type            = $refRequest['userType'];
-        $mGrievanceActiveApplicantion->reopen_count         = $refRequest['initiatorRoleId'] ?? 0;
-        $mGrievanceActiveApplicantion->current_role         = $mGrievanceActiveApplicantion->save();
+        $mGrievanceActiveApplicantion->reopen_count         = $refRequest['reopenCount'] ?? 0;
+        $mGrievanceActiveApplicantion->current_role         = $refRequest['initiatorRoleId'] ?? null;
+        $mGrievanceActiveApplicantion->save();
         return [
             "id" => $mGrievanceActiveApplicantion->id,
         ];
