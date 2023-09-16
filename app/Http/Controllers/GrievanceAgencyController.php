@@ -410,7 +410,7 @@ class GrievanceAgencyController extends Controller
                     break;
                 case ($confModuleIds['PROPERTY']):
                     $endPoint = "prop_endpoint";
-                    $returnData = "Data from property is not maped!";
+                    $returnData = [];
                     break;
                 case ($confModuleIds['TRADE']):
                     $endPoint = "192.168.0.211:8002/api/trade/application/citizen-application-list";
