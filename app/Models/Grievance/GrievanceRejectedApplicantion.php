@@ -33,11 +33,11 @@ class GrievanceRejectedApplicantion extends Model
             'grievance_rejected_applicantions.workflow_id',
             'ulb_masters.ulb_name',
             'ulb_ward_masters.ward_name',
-            'm_grievance_apply_through.apply_through_name',
+            'm_grievance_apply_throughs.apply_through_name',
             DB::raw("CONCAT('" . config('app.url') . "', '/', wf_active_documents.relative_path, '/', wf_active_documents.document) as full_url")
         )
             ->join('wf_active_documents', 'wf_active_documents.active_id', 'grievance_rejected_applicantions.id')
-            ->join('m_grievance_apply_through', 'm_grievance_apply_through.id', 'grievance_rejected_applicantions.user_apply_through')
+            ->join('m_grievance_apply_throughs', 'm_grievance_apply_throughs.id', 'grievance_rejected_applicantions.user_apply_through')
             ->join('ulb_masters', 'ulb_masters.id', '=', 'grievance_rejected_applicantions.ulb_id')
             ->join('ulb_ward_masters', 'ulb_ward_masters.id', '=', 'grievance_rejected_applicantions.ward_id')
 

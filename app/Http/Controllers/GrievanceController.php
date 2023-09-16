@@ -1412,8 +1412,8 @@ class GrievanceController extends Controller
                     DB::raw("'$workflowMstId' as ref_workflow_id")
                 )
                 ->whereNull('current_role')
-                ->get();
-            if (!collect($listedDetails)->first()) {
+                ->paginate($perPage);
+            if (!collect($listedDetails)->last() || collect($listedDetails)->last() == 0) {
                 $msg = "Data not found!";
             }
             return responseMsgs(true, $msg, remove_null($listedDetails), "", "01", responseTime(), "POST", $request->deviceId);
@@ -1606,8 +1606,8 @@ class GrievanceController extends Controller
                 )
                 ->whereNull('current_role')
                 ->where('grievance_rejected_applicantions.agency_rejected_by', $user->id)
-                ->get();
-            if (!$applicationDetails) {
+                ->paginate($perPage);
+            if (collect($applicationDetails)->last() == 0 || !collect($applicationDetails)->last()) {
                 throw new Exception("Application detials Not found!");
             }
             return responseMsgs(true, "Application deails!", remove_null($applicationDetails), "", "01", responseTime(), "POST", $request->deviceId);
