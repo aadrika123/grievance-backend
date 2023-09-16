@@ -139,11 +139,11 @@ class GrievanceActiveApplicantion extends Model
             'grievance_active_applicantions.workflow_id',
             'ulb_masters.ulb_name',
             'ulb_ward_masters.ward_name',
-            'm_grievance_apply_through.apply_through_name',
+            'm_grievance_apply_throughs.apply_through_name',
             DB::raw("CONCAT('" . config('app.url') . "', '/', wf_active_documents.relative_path, '/', wf_active_documents.document) as full_url")
         )
             ->join('wf_active_documents', 'wf_active_documents.active_id', 'grievance_active_applicantions.id')
-            ->join('m_grievance_apply_through', 'm_grievance_apply_through.id', 'grievance_active_applicantions.user_apply_through')
+            ->join('m_grievance_apply_throughs', 'm_grievance_apply_throughs.id', 'grievance_active_applicantions.user_apply_through')
             ->join('ulb_masters', 'ulb_masters.id', '=', 'grievance_active_applicantions.ulb_id')
             ->join('ulb_ward_masters', 'ulb_ward_masters.id', '=', 'grievance_active_applicantions.ward_id')
 
@@ -231,6 +231,8 @@ class GrievanceActiveApplicantion extends Model
 
     /**
      * | Update the Parent application 
+        | Serila No :
+        | Under Con
      */
     public function updateParentAppForInnerWf($request, $wfDatabaseDetial, $refUlbWorkflowId, $refMetaReq)
     {
@@ -288,7 +290,7 @@ class GrievanceActiveApplicantion extends Model
             ->where($database . '.id', $request->applicationId)
             ->where($database . '.status', 1)
             ->update([
-                "status" => $request->status
+                "status" => $request->refStatus
             ]);
     }
 

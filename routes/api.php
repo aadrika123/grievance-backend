@@ -97,6 +97,7 @@ Route::controller(GrievanceAgencyController::class)->group(function () {
     Route::post('agency/get-user-application-list', 'getUserApplicationList');              // w
     Route::post('agency/get-user-application-details', 'getUserApplicationDetails');        // uc
     Route::post('agency/search-question-list', 'searchMasterQuestions');                    // uc
-    Route::post('agency/close-grievance-question', 'closePassGrievance');                    // uc
+    Route::post('agency/close-grievance-question', 'closePassGrievance');                   // uc
+    Route::post('agency/post-query-to-workflow', 'sendQueriesToWorkflow');                  // uc
 });
 // });

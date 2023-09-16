@@ -25,7 +25,7 @@ class saveGrievanceReq extends FormRequest
     {
         $rules["mobileNo"]      = 'required|numeric|digits:10';
         $rules["applicantName"] = 'required';
-        $rules["document"]      = 'required|mimes:jpeg,png,jpg,gif|max:20048';
+        $rules["document"]      = 'nullable|mimes:jpeg,png,jpg,gif|max:20048';
         $rules["description"]   = 'required';
         $rules["grievanceHead"] = 'required|integer';
         $rules["department"]    = 'required|integer';

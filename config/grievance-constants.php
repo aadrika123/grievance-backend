@@ -13,13 +13,20 @@ return [
         "grievance_active_applicantions"                => 34,
         "associated_grievance_active_applicantions"     => 36,
     ],
+
+    "WF_OTHER_DATABASE" => [
+        "grievance_solved_applicantions"                => 34,
+        "associated_grievance_solved_applicantions"     => 36,
+    ],
+
     "WF_REJECTED_DATABASE" => [
         "grievance_rejected_applicantions"              => 34,
         "associated_grievance_rejected_applicantions"   => 36
     ],
     "DB_NAME" => [
-        "P_GRIEVANCE"       => "grievance_active_applicantions",
-        "FIRST_A_GRIEVANCE" => "associated_grievance_active_applicantions"
+        "P_GRIEVANCE"           => "grievance_active_applicantions",
+        "FIRST_A_GRIEVANCE"     => "associated_grievance_active_applicantions",
+        "M_GRIEVANCE_QUESTION"  => "m_grievance_questions"
     ],
     "ID_GEN_PARAM" => [
         "PARENT_GRIEVANCE" => 41,
@@ -28,7 +35,7 @@ return [
     "WHATSAPP_TOKEN"        => env("WHATSAPP_TOKEN", "xxx"),
     "WHATSAPP_NUMBER_ID"    => env("WHATSAPP_NUMBER_ID", "xxx"),
     "WHATSAPP_URL"          => env("WHATSAPP_URL", "xxx"),
-    "SALT_VALUE"            => env("SALT_VALUE"),
+    "SALT_VALUE"            => env("SALT_VALUE", "xxx"),
 
     "REF_USER_TYPE" => [
         "1" => "Citizen",
@@ -53,8 +60,9 @@ return [
     ],
 
     "CONDITION" => [
-        "ACTIVE"    => 1,
-        "REJECTED"  => 0
+        "ACTIVE"        => 1,
+        "REJECTED"      => 0,
+        "WF_REJECTED"   => 5
     ],
 
     "SOLVED_STATUS" => [

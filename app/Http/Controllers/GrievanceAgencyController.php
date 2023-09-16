@@ -556,20 +556,21 @@ class GrievanceAgencyController extends Controller
         try {
             $words = explode(' ', $request->question);
             $wordCount = count($words);
-            if ($wordCount < 3) {
+            if ($wordCount < 2) {
                 return response()->json([
                     'status'    => false,
                     'message'   => "Validation Error!",
-                    'error'     => ["question" => ["The question should contain atleast three words!."]]
+                    'error'     => ["question" => ["The question should contain atleast two words!."]]
                 ], 422);
             }
             $msg = "List of Questions!";
+            $confDatabaseName = $this->_databaseName;
             $pages = $request->pages > 50 || !$request->pages ? $pages = 10 : $pages = $request->pages;
             $mMGrievanceQuestion = new MGrievanceQuestion();
 
             # Querry for search
             $rawSql = "SELECT *
-            FROM m_grievance_questions
+            FROM " . $confDatabaseName['M_GRIEVANCE_QUESTION'] . "
             WHERE to_tsvector('english', questions) @@ plainto_tsquery('english', '" . $request->question . "')";
             $questionQuerry = $mMGrievanceQuestion->searchQuestions($request->moduleId);
             $questionList = $questionQuerry->whereIn('id', function ($query) use ($rawSql) {
@@ -577,6 +578,9 @@ class GrievanceAgencyController extends Controller
                     ->from(DB::raw("($rawSql) as subquery"));
             })->limit($pages)->get();
 
+            if (!collect($questionList)->first()) {
+                $msg = "Data not found!";
+            }
             return responseMsgs(true, $msg, remove_null($questionList), "", "01", responseTime(), $request->getMethod(), $request->deviceId);
         } catch (Exception $e) {
             return responseMsgs(false, $e->getMessage(), [], "", "01", responseTime(), $request->getMethod(), $request->deviceId);
@@ -592,7 +596,8 @@ class GrievanceAgencyController extends Controller
         try {
             $now    = Carbon::now();
             $user   = authUser($request);
-            $mGrievanceClosedQuestion = new GrievanceClosedQuestion();
+            $mGrievanceClosedQuestion   = new GrievanceClosedQuestion();
+            $objGrievanceController     = new GrievanceController();
 
             $this->begin();
             switch ($request->status) {
@@ -619,6 +624,10 @@ class GrievanceAgencyController extends Controller
                         "priority"      => $request->setPriority
                     ]);
                     $mGrievanceClosedQuestion->saveClosedQuestionData($request, $status);
+                    $newRequest = new Request([
+                        "auth" => $request->auth
+                    ]);
+                    $objGrievanceController->registerGrievance($newRequest);
                     break;
             }
             $this->commit();
@@ -628,7 +637,6 @@ class GrievanceAgencyController extends Controller
             return responseMsgs(false, $e->getMessage(), [], "", "01", responseTime(), $request->getMethod(), $request->deviceId);
         }
     }
-
 
 
 
