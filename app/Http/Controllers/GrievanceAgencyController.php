@@ -20,6 +20,7 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Http;
 use Symfony\Component\CssSelector\Node\FunctionNode;
 
+use function PHPSTORM_META\map;
 use function PHPUnit\Framework\isNull;
 
 /**
@@ -225,22 +226,50 @@ class GrievanceAgencyController extends Controller
 
 
     /**
+     * | Structer the water transaction data
+        | Serial No :
+        | Under Con 
+     */
+    public function structureWaterTranData($unstructuredData)
+    {
+        if ($unstructuredData)
+            $filteredData = collect($unstructuredData)->map(function ($value) {
+                return [
+                    "id"            => $value->id,
+                    "tranNo"        => $value->tran_no,
+                    "amount"        => $value->amount,
+                    "tranDate"      => $value->tran_date,
+                    "tranType"      => $value->tran_type,
+                    "status"        => $value->status,
+                    "paymentMode"   => $value->payment_mode
+                ];
+            });
+        return $filteredData->toArray();
+    }
+
+
+    /**
      * | Structure the trade transaction data
         | Serial No :
         | Under Con
      */
     public function structureTradeTranData($unstructuredData)
     {
-        if ($unstructuredData)
-            $filteredData = collect($unstructuredData)->map(function ($value) {
+        $transactionData = collect($unstructuredData->tranDtl)->map(function ($value, $key) {
+            if (!empty($value->dtl)) {
+                return collect($value->dtl)->first();
+            }
+        });
+        if ($transactionData || empty($transactionData))
+            $filteredData = collect($transactionData)->map(function ($value) {
                 return [
                     "id"            => $value->id,
-                    "tranNo"        => $value->application_no,
-                    "amount"        => $value->apply_date,
-                    "tranDate"      => $value->connectionTypeName,
-                    "tranType"      => $value->applicantname,
-                    "status"        => $value->guardianname,
-                    "paymentMode"   => $value
+                    "tranNo"        => $value->tran_no,
+                    "amount"        => $value->paid_amount,
+                    "tranDate"      => $value->tran_date,
+                    "tranType"      => $value->tran_type,
+                    "status"        => $value->status,
+                    "paymentMode"   => $value->payment_mode
                 ];
             });
         return $filteredData->toArray();
@@ -434,13 +463,13 @@ class GrievanceAgencyController extends Controller
                 "id"                => $value->id,
                 "applicationNo"     => $value->application_no,
                 "applyDate"         => $value->apply_date,
-                "applicationType"   => $value->connectionTypeName,
+                "applicationType"   => $value->category,
                 "ownerName"         => $value->applicantname,
                 "guardianName"      => $value->guardianname,
-                "email"             => "",
+                "email"             => $value->email,
                 "paymentStatus"     => $value->payment_status,
                 "docUploadStatus"   => $value->doc_upload_status,
-                "currentRole"       => $value->currentRoleName ?? "",
+                "currentRole"       => $value->current_role ?? "",
                 "fieldVerified"     => $value->is_field_verified,
                 "propType"          => $value->property_no_type,
             ];
