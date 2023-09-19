@@ -1596,6 +1596,7 @@ class GrievanceController extends Controller
             if (!$user) {
                 throw new Exception("User details not found!");
             }
+            $msg            = "Application deails!";
             $workflowMstId  = $this->_workflowMstId;
             $moduleId       = $this->_moduleId;
             $perPage        = $request->perPage ?? 10;
@@ -1608,9 +1609,9 @@ class GrievanceController extends Controller
                 ->where('grievance_rejected_applicantions.agency_rejected_by', $user->id)
                 ->paginate($perPage);
             if (collect($applicationDetails)->last() == 0 || !collect($applicationDetails)->last()) {
-                throw new Exception("Application detials Not found!");
+                $msg = "Application detials Not found!";
             }
-            return responseMsgs(true, "Application deails!", remove_null($applicationDetails), "", "01", responseTime(), "POST", $request->deviceId);
+            return responseMsgs(true, $msg, remove_null($applicationDetails), "", "01", responseTime(), "POST", $request->deviceId);
         } catch (Exception $e) {
             return responseMsgs(false, $e->getMessage(), [], "", "01", responseTime(), "POST", $request->deviceId);
         }

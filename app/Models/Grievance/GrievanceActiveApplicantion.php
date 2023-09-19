@@ -302,4 +302,14 @@ class GrievanceActiveApplicantion extends Model
     {
         DB::table($wfDatabaseType)->where('id', $applicationId)->update($metaData);
     }
+
+
+    /**
+     * | Get active application the are in workflow 
+     */
+    public function getActiveApplication()
+    {
+        return GrievanceActiveApplicantion::where('status',1)
+        ->orderByDesc('id');
+    }
 }
