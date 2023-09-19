@@ -34,7 +34,7 @@ class saveGrievanceReq extends FormRequest
         $rules["gender"]        = 'nullable|in:male,female';
         $rules["disability"]    = 'nullable|in:true,false';
         $rules["address"]       = 'required';
-        $rules["districtId"]    = 'required|integer';
+        $rules["districtId"]    = 'nullable|integer';
         $rules["ulbId"]         = 'nullable|integer';
         $rules["wardId"]        = 'nullable|integer';
         $rules["otherInfo"]     = 'nullable';

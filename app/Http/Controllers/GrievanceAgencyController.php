@@ -741,7 +741,7 @@ class GrievanceAgencyController extends Controller
             // $mGrievanceActiveApplicantion = GrievanceActiveApplicantion::
             $array = [1, 2, 33, 44, 765, 75];
             return collect($array)->filter(function ($value) {
-                return strlen($value);
+                return (string)$value;
             });
         } catch (Exception $e) {
             return responseMsgs(false, $e->getMessage(), [], "", "01", responseTime(), $request->getMethod(), $request->deviceId);
