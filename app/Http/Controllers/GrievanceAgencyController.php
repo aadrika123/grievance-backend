@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\Grievance\closeGrievanceReq;
+use App\Models\Grievance\GrievanceActiveApplicantion;
 use App\Models\Grievance\GrievanceClosedQuestion;
 use App\Models\Grievance\MGrievanceQuestion;
 use App\Models\Property\PropActiveSaf;
@@ -183,6 +184,7 @@ class GrievanceAgencyController extends Controller
             $mModuleMaster  = new ModuleMaster();
             $mApiMaster     = new ApiMaster();
             $confModuleIds  = $this->_moduleIds;
+            $msg            = "User transaction details in!";
 
             $listOfModule = $mModuleMaster->getModuleList()->get();
             $moduleIds = collect($listOfModule)->pluck('id');
@@ -191,7 +193,7 @@ class GrievanceAgencyController extends Controller
             }
 
             $transferData = [
-                "auth"      => $request->auth,
+                // "auth"      => $request->auth,
                 "citizenId" => $request->citizenId
             ];
             switch ($moduleId) {
@@ -202,8 +204,11 @@ class GrievanceAgencyController extends Controller
                     $returnData = $this->structureWaterTranData($unstructuredData);
                     break;
                 case ($confModuleIds['PROPERTY']):
-                    $endPoint = "prop_endpoint";
-                    $returnData = [];
+                    $endPoint = "192.168.0.240:84/api/property/get-user-transaction-details";
+                    $httpResponse = $this->launchHttpRequest($endPoint, $transferData);
+                    $unstructuredData = $httpResponse->data;
+                    $unstructuredData = array_merge($unstructuredData->propTransaction, $unstructuredData->safTransaction);
+                    $returnData = $this->structurePropTranData($unstructuredData);
                     break;
                 case ($confModuleIds['TRADE']):
                     $endPoint = "192.168.0.211:8002/api/trade/application/citizen-history";
@@ -215,11 +220,11 @@ class GrievanceAgencyController extends Controller
                     throw new Exception("Module dont exist!");
                     break;
             }
-            # loping concept for transaction details 
-            # fix the format for data
 
-
-            return responseMsgs(true, "User transaction details in !", $returnData, "", "01", responseTime(), $request->getMethod(), $request->deviceId);
+            if (!$returnData || empty($returnData)) {
+                $msg = "Data not found!";
+            }
+            return responseMsgs(true, $msg, remove_null($returnData), "", "01", responseTime(), $request->getMethod(), $request->deviceId);
         } catch (Exception $e) {
             return responseMsgs(false, $e->getMessage(), [], "", "01", responseTime(), $request->getMethod(), $request->deviceId);
         }
@@ -233,7 +238,7 @@ class GrievanceAgencyController extends Controller
      */
     public function structureWaterTranData($unstructuredData)
     {
-        if ($unstructuredData)
+        if ($unstructuredData) {
             $filteredData = collect($unstructuredData)->map(function ($value) {
                 return [
                     "id"            => $value->id,
@@ -245,7 +250,8 @@ class GrievanceAgencyController extends Controller
                     "paymentMode"   => $value->payment_mode
                 ];
             });
-        return $filteredData->toArray();
+            return $filteredData->toArray();
+        }
     }
 
 
@@ -261,7 +267,7 @@ class GrievanceAgencyController extends Controller
                 return collect($value->dtl)->first();
             }
         });
-        if ($transactionData || empty($transactionData))
+        if ($transactionData || !empty($transactionData)) {
             $filteredData = collect($transactionData)->map(function ($value) {
                 return [
                     "id"            => $value->id,
@@ -273,7 +279,30 @@ class GrievanceAgencyController extends Controller
                     "paymentMode"   => $value->payment_mode
                 ];
             });
-        return $filteredData->toArray();
+            return $filteredData->toArray();
+        }
+    }
+
+
+    /**
+     * | Structure property  transaction data 
+     */
+    public function structurePropTranData($unstructuredData)
+    {
+        if (!empty($unstructuredData)) {
+            $filteredData = collect($unstructuredData)->map(function ($value) {
+                return [
+                    "id"            => $value->id,
+                    "tranNo"        => $value->tran_no,
+                    "amount"        => $value->amount,
+                    "tranDate"      => $value->tran_date,
+                    "tranType"      => $value->tran_type,
+                    "status"        => $value->status,
+                    "paymentMode"   => $value->payment_mode
+                ];
+            });
+            return $filteredData->toArray();
+        };
     }
 
 
@@ -398,20 +427,23 @@ class GrievanceAgencyController extends Controller
 
             # Http paylode
             $transferData = [
-                "auth"      => $request->auth,
+                // "auth"      => $request->auth,
                 "citizenId" => $citizenId
             ];
             # distinguishing the module wise API 
             switch ($moduleId) {
                 case ($confModuleIds['WATER']):
-                    $endPoint = "http://192.168.0.240:84/api/water/application/citizen-application-list";
+                    $endPoint = "192.168.0.240:84/api/water/application/citizen-application-list";
                     $httpResponse = $this->launchHttpRequest($endPoint, $transferData);
                     $unstructuredData = $httpResponse->data;
                     $returnData = $this->structureDataForWater($unstructuredData);
                     break;
                 case ($confModuleIds['PROPERTY']):
-                    $endPoint = "prop_endpoint";
-                    $returnData = [];
+                    $endPoint = "192.168.0.240:84/api/property/citizens/applied-applications";
+                    $transferData['module'] = "Property";                                               // Static
+                    $httpResponse = $this->launchHttpRequest($endPoint, $transferData);
+                    $unstructuredData = $httpResponse->data;
+                    $returnData = $this->structureDataForProperty($unstructuredData);
                     break;
                 case ($confModuleIds['TRADE']):
                     $endPoint = "192.168.0.211:8002/api/trade/application/citizen-application-list";
@@ -485,6 +517,34 @@ class GrievanceAgencyController extends Controller
      */
     public function structureDataForTrade($unstructuredData)
     {
+        $filteredData = collect($unstructuredData)->map(function ($value) {
+            return [
+                "id"                => $value->id,
+                "applicationNo"     => $value->application_no,
+                "applyDate"         => $value->application_date,
+                "applicationType"   => $value->application_type,
+                "ownerName"         => $value->owner_name,
+                "guardianName"      => $value->guardian_name,
+                "email"             => $value->email_id,
+                "paymentStatus"     => $value->payment_status,
+                "docUploadStatus"   => $value->document_upload_status,
+                "currentRole"       => $value->currentRoleName ?? "",
+                "fieldVerified"     => $value->pending_status ?? "",
+                "propType"          => $value->license_type ?? "",
+            ];
+        });
+        return $filteredData->toArray();
+    }
+
+
+    /**
+     * | Structure the property data 
+        | Serial No :
+        | Under Cons
+     */
+    public function structureDataForProperty($unstructuredData)
+    {
+
         $filteredData = collect($unstructuredData)->map(function ($value) {
             return [
                 "id"                => $value->id,
@@ -668,6 +728,23 @@ class GrievanceAgencyController extends Controller
         }
     }
 
+
+    /**
+     * | Get the dashboard data for agrancy
+        | Serial No :
+        | Under Con
+        | Make changs for all dashboard data and diff from agency,jsk and wf members
+     */
+    public function getDashboardDetails(Request $request)
+    {
+        try{
+            // $mGrievanceActiveApplicantion = GrievanceActiveApplicantion::
+        }
+        catch(Exception $e)
+        {
+            return responseMsgs(false, $e->getMessage(), [], "", "01", responseTime(), $request->getMethod(), $request->deviceId);
+        }
+    }
 
 
 

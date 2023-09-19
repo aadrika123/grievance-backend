@@ -2615,6 +2615,30 @@ class GrievanceController extends Controller
     }
 
 
+    /**
+     * | Get active application which are in workflow
+        | Serila No :
+        | Under Con
+     */
+    public function getWfActiveGrievance(Request $request)
+    {
+        try {
+            $msg = "Application List!";
+            $pages = $request->pages ?? 10;
+            $mGrievanceActiveApplicantion = new GrievanceActiveApplicantion();
+            $returnData = $mGrievanceActiveApplicantion->searchActiveGrievance()
+                ->paginate($pages);
+
+            if (collect($returnData)->last() == 0 || !collect($returnData)->last()) {
+                $msg = "Data Not Found!";
+            }
+            return responseMsgs(true, $msg, remove_null($returnData), "", "01", responseTime(), $request->getMethod(), $request->deviceId);
+        } catch (Exception $e) {
+            return responseMsgs(false, $e->getMessage(), [], "", "01", responseTime(), $request->getMethod(), $request->deviceId);
+        }
+    }
+
+
 
 
 

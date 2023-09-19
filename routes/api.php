@@ -61,6 +61,7 @@ Route::controller(GrievanceController::class)->group(function () {
     Route::post('agency-reopen-grievance', 'grievanceReopen');                          // uc
     Route::post('update-citzen-grievance', 'updateCitizenGrievance');                   // uc
     Route::post('get-master-data', 'getMasterData');                                    // uc
+    Route::post('get-active-grievances', 'getWfActiveGrievance');                         // uc 
 
     # Parent workflow api 
     Route::post('wf/send-application-to-wf', 'sendApplicationToWf');                    // uc
@@ -99,5 +100,6 @@ Route::controller(GrievanceAgencyController::class)->group(function () {
     Route::post('agency/search-question-list', 'searchMasterQuestions');                    // uc
     Route::post('agency/close-grievance-question', 'closePassGrievance');                   // uc
     Route::post('agency/post-query-to-workflow', 'sendQueriesToWorkflow');                  // uc
+    Route::post('agency/get-dashboard-details', 'getDashboardDetails');                     // uc
 });
 // });
