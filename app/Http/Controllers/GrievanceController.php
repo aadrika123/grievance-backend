@@ -2595,7 +2595,7 @@ class GrievanceController extends Controller
 
     /**
      * | Get all master data for grievance 
-        | Serial No :
+        | Serial No : 0
         | Under Con
      */
     public function getMasterData(Request $request)
@@ -2618,7 +2618,7 @@ class GrievanceController extends Controller
 
     /**
      * | Get active application which are in workflow
-        | Serila No :
+        | Serila No : 0
         | Under Con
      */
     public function getWfActiveGrievance(Request $request)
@@ -2642,7 +2642,7 @@ class GrievanceController extends Controller
 
     /**
      * | Get the citizen applications ie. current grievances and solved grievances
-        | Serial No :
+        | Serial No : 0
         | Under Con
      */
     public function getCitizenApplications(Request $request)
@@ -2666,8 +2666,9 @@ class GrievanceController extends Controller
             $mGrievanceActiveApplicantion = new GrievanceActiveApplicantion();
             $mGrievanceSolvedApplicantion = new GrievanceSolvedApplicantion();
 
+            # Differ from active application and solved applications
             switch ($request->status) {
-                case ($confStatus['ACTIVE']):               // ie : 1
+                case ($confStatus['ACTIVE']):               // ie : 1 active 
                     $returnData = $mGrievanceActiveApplicantion->searchActiveGrievance()
                         ->where('user_id', $user->id)
                         ->where('user_type', $confUserType['1'])
@@ -2675,7 +2676,7 @@ class GrievanceController extends Controller
                         ->get();
                     break;
 
-                case ($confStatus['DEACTIVE']):               // ie : 0
+                case ($confStatus['DEACTIVE']):               // ie : 0 solved
                     $returnData = $mGrievanceSolvedApplicantion->searchSolvedGrievance()
                         ->where('user_id', $user->id)
                         ->where('user_type', $confUserType['1'])
@@ -2692,6 +2693,53 @@ class GrievanceController extends Controller
         }
     }
 
+    /**
+     * | 
+     */
+    public function getActiveRejectApplication(Request $request)
+    {
+        $validated = Validator::make(
+            $request->all(),
+            [
+                'status' => 'required|in:0,1',
+                'applicationId' => 'required|'
+            ]
+        );
+        if ($validated->fails())
+            return validationError($validated);
+        try {
+            $moduleId       = $this->_moduleId;
+            $confDataBase   = $this->_databaseName;
+            $confStatus     = $this->_solvedStatus;
+            $mGrievanceActiveApplicantion = new GrievanceActiveApplicantion();
+
+            switch ($request->status) {
+                case ($confStatus['ACTIVE']):
+                    $dataBase = $confDataBase['P_GRIEVANCE'];
+                    break;
+
+                case ($confStatus['DEACTIVE']):
+                    $dataBase = $confDataBase['P_SOLVED_GRIEVANCE'];
+                    break;
+            }
+
+            # Base Querry 
+            $applicationDetails = $mGrievanceActiveApplicantion->getGrievanceFullDetails($request->applicationId, $dataBase)
+                ->leftjoin('wf_active_documents', 'wf_active_documents.active_id', $dataBase . '.id')
+                ->whereColumn('wf_active_documents.ulb_id', $dataBase . '.ulb_id')
+                ->where('wf_active_documents.module_id', $moduleId)
+                ->whereColumn('wf_active_documents.workflow_id', $dataBase . '.workflow_id')
+                ->where('wf_active_documents.status', 1)
+                ->selectRaw(DB::raw("CONCAT('" . config('app.url') . "', '/', wf_active_documents.relative_path, '/', wf_active_documents.document) as full_url"))
+                ->first();
+            if (!$applicationDetails) {
+                throw new Exception("Data is not proper for the appliction!");
+            }
+            return responseMsgs(true, "Application detials!", $applicationDetails, "", "01", responseTime(), $request->getMethod(), $request->deviceId);
+        } catch (Exception $e) {
+            return responseMsgs(false, $e->getMessage(), [], "", "01", responseTime(), $request->getMethod(), $request->deviceId);
+        }
+    }
 
 
 

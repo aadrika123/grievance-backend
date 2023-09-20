@@ -97,8 +97,8 @@ class GrievanceActiveApplicantion extends Model
     {
         return DB::table($database)
             ->select($database . '.*', 'ulb_masters.ulb_name', 'ulb_ward_masters.ward_name')
-            ->join('ulb_ward_masters', 'ulb_ward_masters.id', '=', $database . '.ward_id')
-            ->join('ulb_masters', 'ulb_masters.id', '=', $database . '.ulb_id')
+            ->leftJoin('ulb_ward_masters', 'ulb_ward_masters.id', '=', $database . '.ward_id')
+            ->leftJoin('ulb_masters', 'ulb_masters.id', '=', $database . '.ulb_id')
             ->where($database . '.id', $applicationId)
             ->where($database . '.status', 1);
     }

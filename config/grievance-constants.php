@@ -26,7 +26,8 @@ return [
     "DB_NAME" => [
         "P_GRIEVANCE"           => "grievance_active_applicantions",
         "FIRST_A_GRIEVANCE"     => "associated_grievance_active_applicantions",
-        "M_GRIEVANCE_QUESTION"  => "m_grievance_questions"
+        "M_GRIEVANCE_QUESTION"  => "m_grievance_questions",
+        "P_SOLVED_GRIEVANCE"    => "grievance_solved_applicantions",
     ],
     "ID_GEN_PARAM" => [
         "PARENT_GRIEVANCE" => 41,

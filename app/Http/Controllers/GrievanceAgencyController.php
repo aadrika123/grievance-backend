@@ -738,7 +738,21 @@ class GrievanceAgencyController extends Controller
     public function getDashboardDetails(Request $request)
     {
         try {
-            // $mGrievanceActiveApplicantion = GrievanceActiveApplicantion::
+
+            $articles = [
+                "a", "an", "the", "and", "but", "or", "for", "nor", "so", "yet", "in",
+                "on", "at", "by", "with", "about", "before", "after", "during", "under",
+                "over", "between", "through", "above", "below", "I", "you", "he", "she", "it",
+                "we", "they", "me", "him", "her", "us", "them", "am", "is", "are", "was", "were",
+                "be", "being", "been", "do", "does", "did", "have", "has", "had", "shall", "will",
+                "should", "would", "may", "might", "must", "can", "could", "this", "that", "these",
+                "those", "my", "your", "his", "her", "its", "our", "their", "oh", "wow", "ouch", "hey",
+                "hello", "hi"
+            ];
+
+            strpos($request->value, $articles[0]);
+
+
             $array = [3523, 33];
             return collect($array)->map(function ($value) {
                 $string = $value;
