@@ -739,10 +739,19 @@ class GrievanceAgencyController extends Controller
     {
         try {
             // $mGrievanceActiveApplicantion = GrievanceActiveApplicantion::
-            $array = [1, 2, 33, 44, 765, 75];
-            return collect($array)->filter(function ($value) {
-                return (string)$value;
-            });
+            $array = [3523, 33];
+            return collect($array)->map(function ($value) {
+                $string = $value;
+                if (strpos($value, "'")) {
+                    return $string = "'" . $value . "'";
+                }
+                $string = $string[(strlen($string) - 2)] . $string[(strlen($string) - 1)];
+                if (strlen($string) == 2) {
+                    if ($string[1] === $string[0]) {
+                        return $value;
+                    };
+                }
+            })->filter()->values();
         } catch (Exception $e) {
             return responseMsgs(false, $e->getMessage(), [], "", "01", responseTime(), $request->getMethod(), $request->deviceId);
         }

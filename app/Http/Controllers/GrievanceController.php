@@ -304,7 +304,7 @@ class GrievanceController extends Controller
                     'citizenId'         => null,
                     'moduleId'          => $this->_moduleId,
                     'workflowId'        => $ulbWorkflowId->id,
-                    'refTableDotId'     => 'grievance_active_applicantions.id',                             // Static                              // Static
+                    'refTableDotId'     => 'grievance_active_applicantions.id',                             // Static                              
                     'refTableIdValue'   => $applicationDetails['id'],
                     'user_id'           => $user->id ?? null,
                     'ulb_id'            => $ulbId,
@@ -2639,6 +2639,58 @@ class GrievanceController extends Controller
         }
     }
 
+
+    /**
+     * | Get the citizen applications ie. current grievances and solved grievances
+        | Serial No :
+        | Under Con
+     */
+    public function getCitizenApplications(Request $request)
+    {
+        $validated = Validator::make(
+            $request->all(),
+            [
+                'status' => 'required|in:0,1',
+                'pages' => 'nullable|int'
+            ]
+        );
+        if ($validated->fails())
+            return validationError($validated);
+        try {
+            $user           = authUser($request);
+            $pages          = $request->pages ?? 50;
+            $msg            = "Application list!";
+            $confStatus     = $this->_solvedStatus;
+            $confUserType   = $this->_userType;
+
+            $mGrievanceActiveApplicantion = new GrievanceActiveApplicantion();
+            $mGrievanceSolvedApplicantion = new GrievanceSolvedApplicantion();
+
+            switch ($request->status) {
+                case ($confStatus['ACTIVE']):               // ie : 1
+                    $returnData = $mGrievanceActiveApplicantion->searchActiveGrievance()
+                        ->where('user_id', $user->id)
+                        ->where('user_type', $confUserType['1'])
+                        ->limit($pages)
+                        ->get();
+                    break;
+
+                case ($confStatus['DEACTIVE']):               // ie : 0
+                    $returnData = $mGrievanceSolvedApplicantion->searchSolvedGrievance()
+                        ->where('user_id', $user->id)
+                        ->where('user_type', $confUserType['1'])
+                        ->limit($pages)
+                        ->get();
+                    break;
+            }
+            if (!collect($returnData)->first()) {
+                $msg = "Data not found!";
+            }
+            return responseMsgs(true, $msg, $returnData, "", "01", responseTime(), $request->getMethod(), $request->deviceId);
+        } catch (Exception $e) {
+            return responseMsgs(false, $e->getMessage(), [], "", "01", responseTime(), $request->getMethod(), $request->deviceId);
+        }
+    }
 
 
 

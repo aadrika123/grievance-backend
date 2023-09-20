@@ -142,4 +142,30 @@ class GrievanceSolvedApplicantion extends Model
                 "status" => $status
             ]);
     }
+
+    /**
+     * | Get the solved application detail 
+     */
+    public function searchSolvedGrievance()
+    {
+        return GrievanceSolvedApplicantion::select(
+            'grievance_solved_applicantions.id',
+            'grievance_solved_applicantions.mobile_no',
+            'grievance_solved_applicantions.applicant_name',
+            'grievance_solved_applicantions.application_no',
+            'grievance_solved_applicantions.apply_date',
+            'grievance_solved_applicantions.user_apply_through',
+            'grievance_solved_applicantions.inner_workflow_id',
+            'grievance_solved_applicantions.workflow_id',
+            'm_grievance_apply_throughs.apply_through_name',
+            DB::raw("(SELECT wf_masters.id FROM wf_masters 
+                JOIN wf_workflows ON wf_masters.id = wf_workflows.wf_master_id
+                WHERE wf_workflows.id = grievance_solved_applicantions.workflow_id) as workflow_mstr_id"),
+            DB::raw("(SELECT wf_masters.id FROM wf_masters 
+                JOIN wf_workflows ON wf_masters.id = wf_workflows.wf_master_id
+                WHERE wf_workflows.id = grievance_solved_applicantions.inner_workflow_id) as inner_workflow_mstr_id")
+        )
+            ->leftjoin('m_grievance_apply_throughs', 'm_grievance_apply_throughs.id', 'grievance_solved_applicantions.user_apply_through')
+            ->where('grievance_solved_applicantions.status', 1);
+    }
 }
