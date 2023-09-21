@@ -660,11 +660,10 @@ class GrievanceAgencyController extends Controller
             $pages = $request->pages > 50 || !$request->pages ? $pages = 10 : $pages = $request->pages;
             $mMGrievanceQuestion = new MGrievanceQuestion();
 
-
             # getting the grammar set list
             $articlesSet = array_flip($this->_grammarList);
             $inputText = $request->question;
-            $words = preg_split("/\s+/", $inputText);
+            $words = preg_split("/[^A-Za-z0-9]+/", $inputText);
 
             # Filter out words that are in the $articles set
             $filteredWords = array_filter($words, function ($word) use ($articlesSet) {
@@ -675,7 +674,6 @@ class GrievanceAgencyController extends Controller
             } else {
                 $question = implode(" ", $filteredWords);
             }
-
 
             # Querry for search
             $rawSql = "SELECT *
@@ -757,6 +755,9 @@ class GrievanceAgencyController extends Controller
     public function getDashboardDetails(Request $request)
     {
         try {
+
+
+            // $req->input
 
             $articles = [
                 "a", "an", "the", "and", "but", "or", "for", "nor", "so", "yet", "in",

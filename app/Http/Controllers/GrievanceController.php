@@ -589,6 +589,7 @@ class GrievanceController extends Controller
      * | Also display the concept of inner workflow
         | Serial No : 0
         | Working
+        | Check for ward
      */
     public function inbox(Request $request)
     {
@@ -612,10 +613,11 @@ class GrievanceController extends Controller
             $occupiedWards  = $this->getWardByUserId($userId)->pluck('ward_id');
             $roleId         = $this->getRoleIdByUserId($userId)->pluck('wf_role_id');
             $workflowIds    = $mWfWorkflowRoleMaps->getWfByRoleId($roleId)->pluck('workflow_id');
+            $workflowIds    = $workflowIds->toArray();
 
             $inboxDetails = $this->getActiveApplicatioList($workflowIds, $ulbId, $dataBase)
                 ->whereIn($dataBase . '.current_role', $roleId)
-                ->whereIn($dataBase . '.ward_id', $occupiedWards)
+                // ->whereIn($dataBase . '.ward_id', $occupiedWards)
                 ->where($dataBase . '.is_escalate', false)
                 ->where($dataBase . '.parked', false)
                 ->orderByDesc($dataBase . '.id')
@@ -625,7 +627,7 @@ class GrievanceController extends Controller
             if (!$isDataExist || $isDataExist == 0) {
                 throw new Exception('Data not Found!');
             }
-            return responseMsgs(true, "Inbox List Details!", remove_null($inboxDetails), '', '02', '', 'Post', '');
+            return responseMsgs(true, "Inbox List Details!", $inboxDetails, "", "01", responseTime(), $request->getMethod(), $request->deviceId);
         } catch (Exception $e) {
             responseMsgs(false, $e->getMessage(), [], "", "01", responseTime(), "POST", $request->deviceId);
         }
@@ -636,6 +638,7 @@ class GrievanceController extends Controller
      * | Also display the concept of inner workflow
         | Serial No : 0
         | Working
+        | Check for ward
      */
     public function outbox(Request $request)
     {
@@ -659,6 +662,7 @@ class GrievanceController extends Controller
             $occupiedWards  = $this->getWardByUserId($userId)->pluck('ward_id');
             $roleId         = $this->getRoleIdByUserId($userId)->pluck('wf_role_id');
             $workflowIds    = $mWfWorkflowRoleMaps->getWfByRoleId($roleId)->pluck('workflow_id');
+            $workflowIds    = $workflowIds->toArray();
 
             $outBoxDetails = $this->getActiveApplicatioList($workflowIds, $ulbId, $dataBase)
                 ->whereNotIn($dataBase . '.current_role', $roleId)
@@ -1172,6 +1176,7 @@ class GrievanceController extends Controller
      * | Get details for the special inbox
         | Serial No : 0
         | Working
+        | Check for ward
      */
     public function specialInbox(Request $request)
     {
@@ -1195,6 +1200,7 @@ class GrievanceController extends Controller
             $occupiedWards  = $this->getWardByUserId($userId)->pluck('ward_id');
             $roleId         = $this->getRoleIdByUserId($userId)->pluck('wf_role_id');
             $workflowIds    = $mWfWorkflowRoleMaps->getWfByRoleId($roleId)->pluck('workflow_id');
+            $workflowIds    = $workflowIds->toArray();
 
             $specialInboxDetails = $this->getActiveApplicatioList($workflowIds, $ulbId, $dataBase)
                 ->where($dataBase . '.is_escalate', 1)
