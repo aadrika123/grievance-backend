@@ -74,13 +74,15 @@ return [
     ],
 
     "GRAMMER_LIST" => [
-        "a", "an", "the", "and", "but", "or", "for", "nor", "so",
-        "yet", "in", "on", "at", "by", "with", "about", "before", "after",
-        "during", "under", "over", "between", "through", "above", "below", "I","i", "you", "he",
-        "she", "it", "we", "they", "me", "him", "her", "us", "them", "am", "is", "are", "was",
-        "were", "be", "being", "been", "do", "does", "did", "have", "has", "had", "shall",
-        "will", "should", "would", "may", "might", "must", "can", "could", "this", "that",
-        "these", "those", "my", "your", "his", "her", "its", "our", "their", "oh", "wow", "ouch", "hey", "hello", "hi"
-        ,"how"
+        "a", "an", "the", "and", "but", "or", "for", "nor", "so", "yet", "in", "on", "at", "by",
+        "with", "about", "before", "after", "during", "under", "over", "between", "through",
+        "above", "below", "i", "you", "he", "she", "it", "we", "they", "me", "him", "her",
+        "us", "them", "am", "is", "are", "was", "were", "be", "being", "been", "do", "does",
+        "did", "have", "has", "had", "shall", "will", "should", "would", "may", "might", "must",
+        "can", "could", "this", "that", "these", "those", "my", "your", "his", "her", "its",
+        "our", "their", "oh", "wow", "ouch", "hey", "hello", "hi", "how", "to", "in", "of",
+        "by", "with", "about", "as", "on", "off", "up", "down", "out", "over", "under", "at",
+        "before", "after", "since", "during", "above", "below", "through", "beside", "beyond",
+        "inside", "outside", "near", "through", "between", "within", "among",
     ],
 ];
