@@ -666,7 +666,7 @@ class GrievanceController extends Controller
 
             $outBoxDetails = $this->getActiveApplicatioList($workflowIds, $ulbId, $dataBase)
                 ->whereNotIn($dataBase . '.current_role', $roleId)
-                ->whereIn($dataBase . '.ward_id', $occupiedWards)
+                // ->whereIn($dataBase . '.ward_id', $occupiedWards)
                 ->orderByDesc($dataBase . '.id')
                 ->paginate($pages);
 
@@ -1204,7 +1204,7 @@ class GrievanceController extends Controller
 
             $specialInboxDetails = $this->getActiveApplicatioList($workflowIds, $ulbId, $dataBase)
                 ->where($dataBase . '.is_escalate', 1)
-                ->whereIn($dataBase . '.ward_id', $occupiedWards)
+                // ->whereIn($dataBase . '.ward_id', $occupiedWards)
                 ->where($dataBase . '.parked', false)
                 ->orderByDesc($dataBase . '.id')
                 ->paginate($pages);
