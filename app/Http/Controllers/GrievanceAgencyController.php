@@ -55,6 +55,7 @@ class GrievanceAgencyController extends Controller
     private $_condition;
     private $_solvedStatus;
     private $_moduleIds;
+    private $_grammarList;
 
     protected $_DB_NAME;
     protected $_DB;
@@ -79,6 +80,7 @@ class GrievanceAgencyController extends Controller
         $this->_wfRejectedDatabase  = Config::get('grievance-constants.WF_REJECTED_DATABASE');
         $this->_condition           = Config::get('grievance-constants.CONDITION');
         $this->_solvedStatus        = Config::get('grievance-constants.SOLVED_STATUS');
+        $this->_grammarList         = Config::get('grievance-constants.GRAMMER_LIST');
         # Database connectivity
         $this->_DB_NAME     = "pgsql_property";
         $this->_DB          = DB::connection($this->_DB_NAME);
@@ -646,11 +648,11 @@ class GrievanceAgencyController extends Controller
         try {
             $words = explode(' ', $request->question);
             $wordCount = count($words);
-            if ($wordCount < 2) {
+            if ($wordCount < 3) {
                 return response()->json([
                     'status'    => false,
                     'message'   => "Validation Error!",
-                    'error'     => ["question" => ["The question should contain atleast two words!."]]
+                    'error'     => ["question" => ["The question should contain atleast three words!."]]
                 ], 422);
             }
             $msg = "List of Questions!";
@@ -658,10 +660,27 @@ class GrievanceAgencyController extends Controller
             $pages = $request->pages > 50 || !$request->pages ? $pages = 10 : $pages = $request->pages;
             $mMGrievanceQuestion = new MGrievanceQuestion();
 
+
+            # getting the grammar set list
+            $articlesSet = array_flip($this->_grammarList);
+            $inputText = $request->question;
+            $words = preg_split("/\s+/", $inputText);
+
+            # Filter out words that are in the $articles set
+            $filteredWords = array_filter($words, function ($word) use ($articlesSet) {
+                return !isset($articlesSet[strtolower($word)]);
+            });
+            if (count($filteredWords) < 2) {
+                $question = $request->question;
+            } else {
+                $question = implode(" ", $filteredWords);
+            }
+
+
             # Querry for search
             $rawSql = "SELECT *
             FROM " . $confDatabaseName['M_GRIEVANCE_QUESTION'] . "
-            WHERE to_tsvector('english', questions) @@ plainto_tsquery('english', '" . $request->question . "')";
+            WHERE to_tsvector('english', questions) @@ plainto_tsquery('english', '" . $question . "')";
             $questionQuerry = $mMGrievanceQuestion->searchQuestions($request->moduleId);
             $questionList = $questionQuerry->whereIn('id', function ($query) use ($rawSql) {
                 $query->select('id')

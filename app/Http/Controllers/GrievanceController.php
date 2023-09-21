@@ -2713,6 +2713,7 @@ class GrievanceController extends Controller
             $confStatus     = $this->_solvedStatus;
             $mGrievanceActiveApplicantion = new GrievanceActiveApplicantion();
 
+            # determine the database for active grievance or solved grievance 
             switch ($request->status) {
                 case ($confStatus['ACTIVE']):
                     $dataBase = $confDataBase['P_GRIEVANCE'];
@@ -2740,6 +2741,8 @@ class GrievanceController extends Controller
             return responseMsgs(false, $e->getMessage(), [], "", "01", responseTime(), $request->getMethod(), $request->deviceId);
         }
     }
+
+
 
 
 
@@ -2824,6 +2827,7 @@ class GrievanceController extends Controller
      * | Final approval of application in associated workflow
         | Serial No :
         | Under Con
+        | May not be used 
      */
     // public function associatedWfFinalApproval($request, $approveNo, $activeGrievanceDetials)
     // {
