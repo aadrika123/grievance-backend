@@ -2777,8 +2777,10 @@ class GrievanceController extends Controller
             $msg                = "Listed grievance!";
             $confCondition      = $this->_condition;
             $confUserType       = $this->_userType;
-            $activeCondition    = $confCondition['ACTIVE'];
-            $rejecetdCondition  = $confCondition['REJECTED'];
+            $confCondition      = collect($confCondition)->flip();
+            $activeCondition    = $confCondition['1'];
+            $rejecetdCondition  = $confCondition['0'];
+            $solvedCondition    = $confCondition['6'];
             $pages              = $request->pages ?? 10;
             $userId             = $request->userId;
 
@@ -2804,18 +2806,14 @@ class GrievanceController extends Controller
 
             # Solved Grievances
             $solvedGrievances = $mGrievanceSolvedApplicantion->searchSolvedGrievance()
+                ->selectRaw(DB::raw("'$solvedCondition' as active_status"))
                 ->where('grievance_solved_applicantions.user_id', $userId)
                 ->where('grievance_solved_applicantions.user_type', $confUserType['1'])
                 ->limit($pages)
                 ->get();
 
-
-            $returnData = [
-                "activeGrievances" => $activeGrievance,
-                "rejectedGrievances" => $rejectedGrievances,
-                "solvedGrievances" => $solvedGrievances
-            ];
-            return responseMsgs(true, $msg, remove_null($returnData), "", "01", responseTime(), "POST", $request->deviceId);
+            $activeGrievance->merge($solvedGrievances, $rejectedGrievances);
+            return responseMsgs(true, $msg, remove_null($activeGrievance), "", "01", responseTime(), "POST", $request->deviceId);
         } catch (Exception $e) {
             return responseMsgs(false, $e->getMessage(), [], "", "01", responseTime(), "POST", $request->deviceId);
         }

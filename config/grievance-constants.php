@@ -63,7 +63,8 @@ return [
     "CONDITION" => [
         "ACTIVE"        => 1,
         "REJECTED"      => 0,
-        "WF_REJECTED"   => 5
+        "WF_REJECTED"   => 5,
+        "SOLVED"        => 6
     ],
 
     "SOLVED_STATUS" => [
