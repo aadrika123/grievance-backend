@@ -243,13 +243,13 @@ class GrievanceAgencyController extends Controller
         if ($unstructuredData) {
             $filteredData = collect($unstructuredData)->map(function ($value) {
                 return [
-                    "id"            => $value->id,
-                    "tranNo"        => $value->tran_no,
-                    "amount"        => $value->amount,
-                    "tranDate"      => $value->tran_date,
-                    "tranType"      => $value->tran_type,
-                    "status"        => $value->status,
-                    "paymentMode"   => $value->payment_mode
+                    "id"            => $value->id ?? null,
+                    "tranNo"        => $value->tran_no ?? null,
+                    "amount"        => $value->amount ?? null,
+                    "tranDate"      => $value->tran_date ?? null,
+                    "tranType"      => $value->tran_type ?? null,
+                    "status"        => $value->status ?? null,
+                    "paymentMode"   => $value->payment_mode ?? null
                 ];
             });
             return $filteredData->toArray();
@@ -268,17 +268,17 @@ class GrievanceAgencyController extends Controller
             if (!empty($value->dtl)) {
                 return collect($value->dtl)->first();
             }
-        });
+        })->filter();
         if ($transactionData || !empty($transactionData)) {
             $filteredData = collect($transactionData)->map(function ($value) {
                 return [
-                    "id"            => $value->id,
-                    "tranNo"        => $value->tran_no,
-                    "amount"        => $value->paid_amount,
-                    "tranDate"      => $value->tran_date,
-                    "tranType"      => $value->tran_type,
-                    "status"        => $value->status,
-                    "paymentMode"   => $value->payment_mode
+                    "id"            => $value->id ?? null,
+                    "tranNo"        => $value->tran_no ?? null,
+                    "amount"        => $value->paid_amount ?? null,
+                    "tranDate"      => $value->tran_date ?? null,
+                    "tranType"      => $value->tran_type ?? null,
+                    "status"        => $value->status ?? null,
+                    "paymentMode"   => $value->payment_mode ?? null
                 ];
             });
             return $filteredData->toArray();
@@ -294,13 +294,13 @@ class GrievanceAgencyController extends Controller
         if (!empty($unstructuredData)) {
             $filteredData = collect($unstructuredData)->map(function ($value) {
                 return [
-                    "id"            => $value->id,
-                    "tranNo"        => $value->tran_no,
-                    "amount"        => $value->amount,
-                    "tranDate"      => $value->tran_date,
-                    "tranType"      => $value->tran_type,
-                    "status"        => $value->status,
-                    "paymentMode"   => $value->payment_mode
+                    "id"            => $value->id ?? null,
+                    "tranNo"        => $value->tran_no ?? null,
+                    "amount"        => $value->amount ?? null,
+                    "tranDate"      => $value->tran_date ?? null,
+                    "tranType"      => $value->tran_type ?? null,
+                    "status"        => $value->status ?? null,
+                    "paymentMode"   => $value->payment_mode ?? null
                 ];
             });
             return $filteredData->toArray();

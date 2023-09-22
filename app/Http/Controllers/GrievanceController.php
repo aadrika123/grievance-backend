@@ -33,6 +33,8 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use PhpParser\Node\Expr\Empty_;
+use Barryvdh\DomPDF\Facade\PDF;
+use Illuminate\Support\Facades\Storage;
 
 /**
  * | Created by :
@@ -327,6 +329,7 @@ class GrievanceController extends Controller
                     ]
                 ]
             ));
+
             $this->commit();
 
             $returnData = [
@@ -535,6 +538,7 @@ class GrievanceController extends Controller
      * | Read Document Path
         | Serial No : 0
         | Working
+        | Common
      */
     public function readDocumentPath($path)
     {
@@ -589,7 +593,7 @@ class GrievanceController extends Controller
      * | Also display the concept of inner workflow
         | Serial No : 0
         | Working
-        | Check for ward
+        | Check for ward detials
      */
     public function inbox(Request $request)
     {
@@ -610,7 +614,7 @@ class GrievanceController extends Controller
             $mWfWorkflowRoleMaps    = new WfWorkflowrolemap();
 
             $dataBase       = $this->getLevelsOfWf($request);
-            $occupiedWards  = $this->getWardByUserId($userId)->pluck('ward_id');
+            // $occupiedWards  = $this->getWardByUserId($userId)->pluck('ward_id');
             $roleId         = $this->getRoleIdByUserId($userId)->pluck('wf_role_id');
             $workflowIds    = $mWfWorkflowRoleMaps->getWfByRoleId($roleId)->pluck('workflow_id');
             $workflowIds    = $workflowIds->toArray();
@@ -629,7 +633,7 @@ class GrievanceController extends Controller
             }
             return responseMsgs(true, "Inbox List Details!", $inboxDetails, "", "01", responseTime(), $request->getMethod(), $request->deviceId);
         } catch (Exception $e) {
-            responseMsgs(false, $e->getMessage(), [], "", "01", responseTime(), "POST", $request->deviceId);
+            return responseMsgs(false, $e->getMessage(), [], "", "01", responseTime(), "POST", $request->deviceId);
         }
     }
 
@@ -659,7 +663,7 @@ class GrievanceController extends Controller
             $mWfWorkflowRoleMaps    = new WfWorkflowrolemap();
 
             $dataBase       = $this->getLevelsOfWf($request);
-            $occupiedWards  = $this->getWardByUserId($userId)->pluck('ward_id');
+            // $occupiedWards  = $this->getWardByUserId($userId)->pluck('ward_id');
             $roleId         = $this->getRoleIdByUserId($userId)->pluck('wf_role_id');
             $workflowIds    = $mWfWorkflowRoleMaps->getWfByRoleId($roleId)->pluck('workflow_id');
             $workflowIds    = $workflowIds->toArray();
@@ -703,6 +707,9 @@ class GrievanceController extends Controller
                 break;
             case ($wfDatabase['associated_grievance_active_applicantions']):
                 $dataBase = $refDatabase['36'];
+                break;
+            default:
+                throw new Exception("Invalid Wf Master Id");
                 break;
         }
         return $dataBase;
@@ -1197,7 +1204,7 @@ class GrievanceController extends Controller
             $mWfWorkflowRoleMaps    = new WfWorkflowrolemap();
 
             $dataBase       = $this->getLevelsOfWf($request);
-            $occupiedWards  = $this->getWardByUserId($userId)->pluck('ward_id');
+            // $occupiedWards  = $this->getWardByUserId($userId)->pluck('ward_id');
             $roleId         = $this->getRoleIdByUserId($userId)->pluck('wf_role_id');
             $workflowIds    = $mWfWorkflowRoleMaps->getWfByRoleId($roleId)->pluck('workflow_id');
             $workflowIds    = $workflowIds->toArray();
@@ -1399,7 +1406,6 @@ class GrievanceController extends Controller
      * | List Grievance application for the agency dashbord
         | Serial No : 
         | Under Con
-        | Add pagination 
      */
     public function getGrievanceForAgency(Request $request)
     {
@@ -1981,6 +1987,7 @@ class GrievanceController extends Controller
      * | Get Database accept the active table
         | Serial No :
         | Under Con
+        | Common
      */
     public function getOtherDb($request)
     {
@@ -2274,7 +2281,7 @@ class GrievanceController extends Controller
             }
 
             $this->begin();
-            $applicationNo  = "GRE" . Str::random(10) . "RE";
+            $applicationNo  = "GRE" . Str::random(10) . "RE";                                       // Check the application no
             $refRequest = [
                 "applicationNo"         => $applicationNo,
                 "initiatorRoleId"       => $applicationDetails->initiator_id,
@@ -2749,7 +2756,70 @@ class GrievanceController extends Controller
     }
 
 
+    /**
+     * | Get active, solved and rejected grievances behalf of the user
+        | Serial No :
+        | Under Con
+     */
+    public function getGrievanceByUserId(Request $request)
+    {
+        $validated  = Validator::make(
+            $request->all(),
+            [
+                'userId'  => 'required|int',
+                'pages'   => 'nullable|integer'
+            ]
+        );
+        if ($validated->fails())
+            return validationError($validated);
 
+        try {
+            $msg                = "Listed grievance!";
+            $confCondition      = $this->_condition;
+            $confUserType       = $this->_userType;
+            $activeCondition    = $confCondition['ACTIVE'];
+            $rejecetdCondition  = $confCondition['REJECTED'];
+            $pages              = $request->pages ?? 10;
+            $userId             = $request->userId;
+
+            $mGrievanceActiveApplicantion   = new GrievanceActiveApplicantion();
+            $mGrievanceRejectedApplicantion = new GrievanceRejectedApplicantion();
+            $mGrievanceSolvedApplicantion   = new GrievanceSolvedApplicantion();
+
+            # Active Grievances
+            $activeGrievance = $mGrievanceActiveApplicantion->searchActiveGrievance()
+                ->selectRaw(DB::raw("'$activeCondition' as active_status"))
+                ->where('grievance_active_applicantions.user_id', $userId)
+                ->where('grievance_active_applicantions.user_type', $confUserType['1'])
+                ->limit($pages)
+                ->get();
+
+            # Rejected Grievances
+            $rejectedGrievances = $mGrievanceRejectedApplicantion->searchRejectedGrievance()
+                ->selectRaw(DB::raw("'$rejecetdCondition' as active_status"))
+                ->where('grievance_rejected_applicantions.user_id', $userId)
+                ->where('grievance_rejected_applicantions.user_type', $confUserType['1'])
+                ->limit($pages)
+                ->get();
+
+            # Solved Grievances
+            $solvedGrievances = $mGrievanceSolvedApplicantion->searchSolvedGrievance()
+                ->where('grievance_solved_applicantions.user_id', $userId)
+                ->where('grievance_solved_applicantions.user_type', $confUserType['1'])
+                ->limit($pages)
+                ->get();
+
+
+            $returnData = [
+                "activeGrievances" => $activeGrievance,
+                "rejectedGrievances" => $rejectedGrievances,
+                "solvedGrievances" => $solvedGrievances
+            ];
+            return responseMsgs(true, $msg, remove_null($returnData), "", "01", responseTime(), "POST", $request->deviceId);
+        } catch (Exception $e) {
+            return responseMsgs(false, $e->getMessage(), [], "", "01", responseTime(), "POST", $request->deviceId);
+        }
+    }
 
 
 
@@ -2871,4 +2941,30 @@ class GrievanceController extends Controller
     //     return $grievanceId;
     // }
 
+    public function v2(Request $request)
+    {
+        $data["data"] = ["afsdf", "sdlfjksld", "dfksdfjk"];
+        # Watsapp pdf sending
+        $filename = "1-2-" . time() . '.' . 'pdf';
+        $url = "Uploads/Notice/Remider/" . $filename;
+        $pdf = PDF::loadView('whatapp/payment_recipte', $data);
+        $file = $pdf->download($filename . '.' . 'pdf');
+        $pdf = Storage::put('public' . '/' . $url, $file);
+
+        $whatsapp = (Whatsapp_Send(
+            7319867430,                                         // <------- user mobile no
+            "send_pdf_1",                                       // <------- cofig
+            [
+                "conten_type" => "pdf",
+                [
+                    "link" => config('app.url') . "/getImageLink?path=" . $url,
+                    "filename" => $pdf
+                ]
+            ]
+        ));
+
+        $whatsapp;
+
+        return view("whatapp/payment_recipte", $data);
+    }
 }

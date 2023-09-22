@@ -63,7 +63,8 @@ Route::controller(GrievanceController::class)->group(function () {
     Route::post('get-master-data', 'getMasterData');                                    // uc
     Route::post('get-active-grievances', 'getWfActiveGrievance');                       // uc 
     Route::post('citizen/get-active-reject-applications', 'getCitizenApplications');    // uc
-    Route::post('citizen/get-application-details', 'getActiveRejectApplication');
+    Route::post('citizen/get-application-details', 'getActiveRejectApplication');       // uc
+    Route::post('agency/get-user-grievances', 'getGrievanceByUserId');                  // uc
 
     # Parent workflow api 
     Route::post('wf/send-application-to-wf', 'sendApplicationToWf');                    // uc
