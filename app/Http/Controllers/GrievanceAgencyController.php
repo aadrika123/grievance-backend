@@ -696,7 +696,10 @@ class GrievanceAgencyController extends Controller
 
 
     /**
-     * | Approve or post to the next level verification 
+     * | Approve or post to the next level verification
+        | Serial No :
+        | Under Con   
+        | Look for the process of sending to wf
      */
     public function closePassGrievance(closeGrievanceReq $request)
     {
@@ -731,10 +734,10 @@ class GrievanceAgencyController extends Controller
                         "priority"      => $request->setPriority
                     ]);
                     $mGrievanceClosedQuestion->saveClosedQuestionData($request, $status);
-                    $newRequest = new Request([
-                        "auth" => $request->auth
-                    ]);
-                    $objGrievanceController->registerGrievance($newRequest);
+                    // $newRequest = new Request([
+                    //     "auth" => $request->auth
+                    // ]);
+                    // $objGrievanceController->registerGrievance($newRequest);
                     break;
             }
             $this->commit();
@@ -750,6 +753,7 @@ class GrievanceAgencyController extends Controller
      * | Get the dashboard data for agrancy
         | Serial No :
         | Under Con
+        | Test ground
         | Make changs for all dashboard data and diff from agency,jsk and wf members
      */
     public function getDashboardDetails(Request $request)
