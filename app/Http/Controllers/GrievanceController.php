@@ -327,7 +327,8 @@ class GrievanceController extends Controller
                         "Grievance",                    // Static
                         $applicationNo,
                     ]
-                ]
+                ],
+                // "en"
             ));
 
             $this->commit();
@@ -2939,30 +2940,33 @@ class GrievanceController extends Controller
     //     return $grievanceId;
     // }
 
-    public function v2(Request $request)
-    {
-        $data["data"] = ["afsdf", "sdlfjksld", "dfksdfjk"];
-        # Watsapp pdf sending
-        $filename = "1-2-" . time() . '.' . 'pdf';
-        $url = "Uploads/Notice/Remider/" . $filename;
-        $pdf = PDF::loadView('whatapp/payment_recipte', $data);
-        $file = $pdf->download($filename . '.' . 'pdf');
-        $pdf = Storage::put('public' . '/' . $url, $file);
 
-        $whatsapp = (Whatsapp_Send(
-            7319867430,                                         // <------- user mobile no
-            "send_pdf_1",                                       // <------- cofig
-            [
-                "conten_type" => "pdf",
-                [
-                    "link" => config('app.url') . "/getImageLink?path=" . $url,
-                    "filename" => $pdf
-                ]
-            ]
-        ));
+    ////////////////////////////////////////////////////////////
+    // public function v2(Request $request)
+    // {
+    //     $data["data"] = ["afsdf", "sdlfjksld", "dfksdfjk"];
+    //     # Watsapp pdf sending
+    //     $filename = "1-2-" . time() . '.' . 'pdf';
+    //     $url = "Uploads/Notice/Remider/" . $filename;
+    //     $pdf = PDF::loadView('whatapp/payment_recipte', $data);
+    //     $file = $pdf->download($filename . '.' . 'pdf');
+    //     $pdf = Storage::put('public' . '/' . $url, $file);
 
-        $whatsapp;
+    //     $whatsapp = (Whatsapp_Send(
+    //         7319867430,                                                    // <------- user mobile no
+    //         "file_test",            //send_pdf_1                           // <------- cofig
+    //         [
+    //             "content_type" => "pdf",
+    //             [
+    //                 "link" => config('app.url') . "/getImageLink?path=" . $url,
+    //                 "filename" => "TEST_PDF" . ".pdf"
+    //             ]
+    //         ],
+    //         // "en_us"
+    //     ));
 
-        return view("whatapp/payment_recipte", $data);
-    }
+    //     $whatsapp;
+
+    //     return view("whatapp/payment_recipte", $data);
+    // }
 }

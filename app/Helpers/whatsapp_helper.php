@@ -4,7 +4,7 @@ use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Http;
 
 if (!function_exists('WHATSAPPJHGOVT')) {
-    function WHATSAPPJHGOVT($mobileno, $templateid, array $message = [])
+    function WHATSAPPJHGOVT($mobileno, $templateid, array $message = []) // $language
     {
         $bearerToken    = Config::get("grievance-constants.WHATSAPP_TOKEN");
         $numberId       = Config::get("grievance-constants.WHATSAPP_NUMBER_ID");
@@ -18,12 +18,12 @@ if (!function_exists('WHATSAPPJHGOVT')) {
         ])->post($url . $numberId . "/messages", [
             "messaging_product" => "whatsapp",
             "recipient_type" => "individual",
-            "to" => "+91$mobileno",                     //<--------------------- here
+            "to" => "+91$mobileno",                             //<--------------------- here
             "type" => "template",
             "template" => [
                 "name" => "$templateid",
                 "language" => [
-                    "code" => "en"                      //<-------------------- en:English
+                    "code" => "un"                      //<-------------------- en:English
                 ],
                 "components" => [
                     ($message
@@ -75,9 +75,9 @@ if (!function_exists('WHATSAPPJHGOVT')) {
 }
 
 if (!function_exists('Whatsapp_Send')) {
-    function Whatsapp_Send($mobileno, $templateid, array $message = [])
+    function Whatsapp_Send($mobileno, $templateid, array $message = []) // $language
     {
-        $res = WHATSAPPJHGOVT($mobileno, $templateid, $message);
+        $res = WHATSAPPJHGOVT($mobileno, $templateid, $message);  // $language
         return $res;
     }
 }
