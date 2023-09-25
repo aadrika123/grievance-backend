@@ -23,7 +23,7 @@ if (!function_exists('WHATSAPPJHGOVT')) {
             "template" => [
                 "name" => "$templateid",
                 "language" => [
-                    "code" => "un"                      //<-------------------- en:English
+                    "code" => "en_us"                      //<-------------------- en:English
                 ],
                 "components" => [
                     ($message

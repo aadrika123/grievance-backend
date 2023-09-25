@@ -86,4 +86,13 @@ return [
         "before", "after", "since", "during", "above", "below", "through", "beside", "beyond",
         "inside", "outside", "near", "through", "between", "within", "among",
     ],
+
+    "FILTER_PARAMETER" => [
+        "MOBILE_NO"         => 1,
+        "HOLDING_NO"        => 2,
+        "SAF_NO"            => 3,
+        "APPLICATION_NO"    => 4,
+        "CONSUMER_NO"       => 5,
+        "TRADE_LICENCE_NO"  => 6,
+    ],
 ];

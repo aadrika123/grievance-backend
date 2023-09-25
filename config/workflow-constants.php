@@ -13,7 +13,9 @@ return [
         "BO"    => 11,
         "EO"    => 10,
         "JSK"   => 8,
-        "TC"    => 5
+        "TC"    => 5,
+        "APM"   => 38,
+        "TS"    => 39
     ],
 
     "MODULE_LISTING" => [

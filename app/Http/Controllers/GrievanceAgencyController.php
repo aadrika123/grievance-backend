@@ -4,12 +4,14 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\Grievance\closeGrievanceReq;
 use App\Models\Grievance\GrievanceActiveApplicantion;
+use App\Models\Grievance\GrievanceActiveQuestion;
 use App\Models\Grievance\GrievanceClosedQuestion;
 use App\Models\Grievance\MGrievanceQuestion;
 use App\Models\Property\PropActiveSaf;
 use App\Models\ThirdParty\ApiMaster;
 use App\Models\User;
 use App\Models\Workflow\ModuleMaster;
+use App\Pipelines\Grievance\SearchProperty;
 use App\Traits\GrievanceTrait;
 use App\Traits\Workflow\Workflow;
 use Carbon\Carbon;
@@ -19,6 +21,7 @@ use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Pipeline\Pipeline;
 use Symfony\Component\CssSelector\Node\FunctionNode;
 
 use function PHPSTORM_META\map;
@@ -136,32 +139,51 @@ class GrievanceAgencyController extends Controller
      * | Get user details according to mobile No 
         | Serial No :
         | Under Con :
+        | Priority first
      */
-    public function getUserDetails(Request $request)
-    {
-        $validated = Validator::make(
-            $request->all(),
-            [
-                "mobileNo" => "required|numeric|digits:10",
-            ]
-        );
-        if ($validated->fails()) {
-            return validationError($validated);
-        }
-        try {
-            $mUser          = new User();
-            $mobileNo       = $request->mobileNo;
-            $msg            = "User and module related details!";
+    // public function getUserDetails(Request $request)
+    // {
+    //     $validated = Validator::make(
+    //         $request->all(),
+    //         [
+    //             "filterBy"  => "required|",
+    //             "parameter" => "required|",
+    //         ]
+    //     );
+    //     if ($validated->fails()) {
+    //         return validationError($validated);
+    //     }
+    //     try {
+    //         $key        = $request->filterBy;
+    //         $mUser      = new User();
+    //         $mobileNo   = $request->mobileNo; hh
+    //         $msg        = "User and module related details!";
 
-            $userDetails = $mUser->getUserByMobileNo($mobileNo)->first();
-            if (!$userDetails) {
-                $msg = "User Details don't exist according to $mobileNo";
-            }
-            return responseMsgs(true, $msg, $userDetails, "", "01", responseTime(), $request->getMethod(), $request->deviceId);
-        } catch (Exception $e) {
-            return responseMsgs(false, $e->getMessage(), [], "", "01", responseTime(), $request->getMethod(), $request->deviceId);
-        }
-    }
+    //         $response = app(Pipeline::class)
+    //             ->send($request->all())
+    //             ->through([
+    //                 SearchProperty::class,
+    //                 SearchTrade::class,
+    //                 SearchWater::class,
+    //                 // SearchAdvertisement::class,
+    //                 // SearchMunicipalRental::class,
+    //                 // SearchDailyLicenseFee::class
+    //             ])
+    //             ->thenReturn();
+    //         if(!$response)
+    //         {
+    //             $msg = "Data not found!";
+    //         }
+
+    //         // $userDetails = $mUser->getUserByMobileNo($mobileNo)->first();
+    //         // if (!$userDetails) {
+    //         //     $msg = "User Details don't exist according to $mobileNo";
+    //         // }
+    //         return responseMsgs(true, $msg, $response, "", "01", responseTime(), $request->getMethod(), $request->deviceId);
+    //     } catch (Exception $e) {
+    //         return responseMsgs(false, $e->getMessage(), [], "", "01", responseTime(), $request->getMethod(), $request->deviceId);
+    //     }
+    // }
 
 
     /**
@@ -796,6 +818,60 @@ class GrievanceAgencyController extends Controller
     }
 
 
+    /**
+     * | Forward the application to AMP/PM /Agency action
+        | Serial No :
+        | Under Con 
+        | Get the role according to workflow / Recheck
+     */
+    public function forwardToAmp(Request $request)
+    {
+        $validated = Validator::make(
+            $request->all(),
+            [
+                "question"      => "required|",
+                "moduleId"      => "required|int",
+                "priorities"    => "required|int",
+                "remarks"       => "nullable|",
+                "userId"        => "required|",
+                "mobileNo"      => "nullable|"
+            ]
+        );
+        if ($validated->fails()) {
+            return validationError($validated);
+        }
+        try {
+            $confRoles = $this->_grievanceRoleLevel;
+            $mGrievanceActiveQuestion = new GrievanceActiveQuestion();
+            $request->merge([
+                "initiator"     => $confRoles['TS'],
+                "current_role"  => $confRoles['TS']
+            ]);
+            $mGrievanceActiveQuestion->saveQuestion($request);
+            return responseMsgs(true, "Application forwarded!", [], "", "01", responseTime(), $request->getMethod(), $request->deviceId);
+        } catch (Exception $e) {
+            return responseMsgs(false, $e->getMessage(), [], "", "01", responseTime(), $request->getMethod(), $request->deviceId);
+        }
+    }
+
+
+    /**
+     * | Get the list of Question that are forwarded to Respondent 
+        | Serial No :
+        | Under Con
+     */
+    public function getActiveQuestions(Request $request)
+    {
+        try {
+            $pages = $request->pages ?? 10;
+            $mGrievanceActiveQuestion = new GrievanceActiveQuestion();
+            $appliedQuestions = $mGrievanceActiveQuestion->listActiveQuestions()
+                ->paginate($pages);
+            return responseMsgs(true, "Question list!", remove_null($appliedQuestions), "", "01", responseTime(), $request->getMethod(), $request->deviceId);
+        } catch (Exception $e) {
+            return responseMsgs(false, $e->getMessage(), [], "", "01", responseTime(), $request->getMethod(), $request->deviceId);
+        }
+    }
 
 
 

@@ -2953,7 +2953,7 @@ class GrievanceController extends Controller
     //     $pdf = Storage::put('public' . '/' . $url, $file);
 
     //     $whatsapp = (Whatsapp_Send(
-    //         7319867430,                                                    // <------- user mobile no
+    //         6206998554,                                                    // <------- user mobile no
     //         "file_test",            //send_pdf_1                           // <------- cofig
     //         [
     //             "content_type" => "pdf",
