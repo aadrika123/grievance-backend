@@ -181,7 +181,8 @@ class GrievanceActiveApplicantion extends Model
                 WHERE wf_workflows.id = grievance_active_applicantions.inner_workflow_id) as inner_workflow_mstr_id")
         )
             ->join('m_grievance_apply_throughs', 'm_grievance_apply_throughs.id', 'grievance_active_applicantions.user_apply_through')
-            ->where('grievance_active_applicantions.status', 1);
+            ->where('grievance_active_applicantions.status', 1)
+            ->orderByDesc('grievance_active_applicantions.id');
     }
 
 
@@ -309,7 +310,7 @@ class GrievanceActiveApplicantion extends Model
      */
     public function getActiveApplication()
     {
-        return GrievanceActiveApplicantion::where('status',1)
-        ->orderByDesc('id');
+        return GrievanceActiveApplicantion::where('status', 1)
+            ->orderByDesc('id');
     }
 }
