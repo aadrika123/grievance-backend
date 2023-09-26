@@ -1785,7 +1785,7 @@ class GrievanceController extends Controller
             //     ->limit($perPage)
             //     ->get();
             $returnData = $approvedData; // ->merge($rejectedData);
-            if (!collect($returnData)->last() || collect($returnData)->last() == 0) {
+            if (!collect($returnData)->last()) { //|| collect($returnData)->last() == 0
                 $msg = "Data Not Found!";
             }
             return responseMsgs(true, $msg, remove_null($returnData), "", "01", responseTime(), "POST", $request->deviceId);
