@@ -157,7 +157,7 @@ class GrievanceAgencyController extends Controller
         try {
             $key        = $request->filterBy;
             $mUser      = new User();
-            $parameter   = $request->parameter;
+            $parameter  = $request->parameter;
             $msg        = "User and module related details!";
 
             # Distinguish btw filter parameter
@@ -181,6 +181,8 @@ class GrievanceAgencyController extends Controller
 
     /**
      * | Launch the http request V2 for module related details 
+        | Serial No :
+        | Under Con
      */
     public function launchHttpRequestV2($request)
     {
@@ -968,6 +970,70 @@ class GrievanceAgencyController extends Controller
     }
 
 
+    /**
+     * | send the querry question to Ts
+        | Seria No :
+        | Under Con
+        | Uncomment the code for validation
+     */
+    public function forwardToTs(Request $request)
+    {
+        $validated = Validator::make(
+            $request->all(),
+            [
+                "questionId"    => "required|",
+            ]
+        );
+        if ($validated->fails()) {
+            return validationError($validated);
+        }
+        try {
+            $confRoles = $this->_grievanceRoleLevel;
+            $mGrievanceActiveQuestion = new GrievanceActiveQuestion();
+            $activeQuestion = $mGrievanceActiveQuestion->getActiveQuestionById($request->questionId)->first();
+            if (!$activeQuestion) {
+                throw new Exception("Active question not found!");
+            }
+            // $this->checkParamForTs($request, $activeQuestion);
+            $metaReq = [
+                "current_role" => $confRoles['TS']
+            ];
+            $mGrievanceActiveQuestion->updateDetails($metaReq, $request->questionId);
+            return responseMsgs(true, "Application forwarded!", [], "", "01", responseTime(), $request->getMethod(), $request->deviceId);
+        } catch (Exception $e) {
+            return responseMsgs(false, $e->getMessage(), [], "", "01", responseTime(), $request->getMethod(), $request->deviceId);
+        }
+    }
+
+
+    /**
+     * | Check the params for forwerding to Ts
+        | Serial No :
+        | Under Con
+     */
+    public function checkParamForTs($request, $activeQuestion)
+    {
+        $user           = authUser($request);
+        $mWfWorkflow    = new WfWorkflow();
+        $refWorkflow    = $this->_workflowMstId;
+        $confRoles      = $this->_grievanceRoleLevel;
+        $ulbId          = $user->ulb_id ?? 2;                                        // Static
+        # Check user detials
+        $ulbWorkflowId = $mWfWorkflow->getulbWorkflowId($refWorkflow, $ulbId);
+        if (!$ulbWorkflowId) {
+            throw new Exception("Respective Ulb is not maped to Water Workflow!");
+        }
+        $request->merge([
+            "workflowId" => $ulbWorkflowId->id
+        ]);
+        $roleDetails = $this->getRole($request);
+        if (!collect($roleDetails)->first()) {
+            throw new Exception("Role not found!");
+        }
+        if ($roleDetails['wf_role_id'] != $confRoles['APM']) {
+            throw new Exception("you are not autherised to forward!");
+        }
+    }
 
 
 

@@ -1770,7 +1770,6 @@ class GrievanceController extends Controller
             $confCondition      = $this->_condition;
             $activeCondition    = $confCondition['ACTIVE'];
             $rejecetdCondition  = $confCondition['REJECTED'];
-            $pages              = $request->pages ?? 10;
 
             $mGrievanceActiveApplicantion   = new GrievanceActiveApplicantion();
             $mGrievanceRejectedApplicantion = new GrievanceRejectedApplicantion();
@@ -1778,7 +1777,7 @@ class GrievanceController extends Controller
             $approvedData = $mGrievanceActiveApplicantion->searchActiveGrievance()
                 ->selectRaw(DB::raw("'$activeCondition' as active_status"))
                 ->where('grievance_active_applicantions.mobile_no', $request->mobileNo)
-                ->paginate($pages);
+                ->get();
             # Listing the rejected grievance
             // $rejectedData = $mGrievanceRejectedApplicantion->searchRejectedGrievance()
             //     ->selectRaw(DB::raw("'$rejecetdCondition' as active_status"))

@@ -10,12 +10,7 @@ if (!function_exists('WHATSAPPJHGOVT')) {
         $numberId       = Config::get("grievance-constants.WHATSAPP_NUMBER_ID");
         $url            = Config::get("grievance-constants.WHATSAPP_URL");
 
-        $result = Http::withHeaders([
-
-            "Authorization" => "Bearer $bearerToken",
-            "contentType" => "application/json"
-
-        ])->post($url . $numberId . "/messages", [
+        $data = [
             "messaging_product" => "whatsapp",
             "recipient_type" => "individual",
             "to" => "+91$mobileno",                             //<--------------------- here
@@ -23,13 +18,14 @@ if (!function_exists('WHATSAPPJHGOVT')) {
             "template" => [
                 "name" => "$templateid",
                 "language" => [
-                    "code" => "en_us"                           //<-------------------- en:English
+                    "code" => "en_US"                           //<-------------------- en:English/ en_US:EngPDf
                 ],
                 "components" => [
                     ($message
                         ?
                         (
-                            ($message['conten_type'] ?? "") == "pdf" ?
+                            ($message['content_type'] ?? "") == "pdf"
+                            ?
                             ([
                                 "type" => "header",
                                 "parameters" => [
@@ -42,10 +38,8 @@ if (!function_exists('WHATSAPPJHGOVT')) {
                                         // ]
                                     ]
                                 ]
-                            ]
-                            )
-                            : (
-                                ($message['conten_type'] ?? "") == "text" ?
+                            ])
+                            : (($message['content_type'] ?? "") == "text" ?
                                 ([
                                     "type" => "body",
                                     "parameters" => array_map(function ($val) {
@@ -54,14 +48,22 @@ if (!function_exists('WHATSAPPJHGOVT')) {
                                 ]
                                 )
                                 :
-                                ""
-                            )
-
+                                "")
                         )
                         : ""),
                 ]
             ]
-        ]);
+        ];
+
+        # Calling the http request
+        $result = Http::withHeaders([
+
+            "Authorization" => "Bearer $bearerToken",
+            "contentType" => "application/json"
+
+        ])->post($url . $numberId . "/messages", $data);
+
+        # Validate the resposne
         $responseBody = json_decode($result->getBody(), true);
         if (isset($responseBody["error"])) {
             $response = ['response' => false, 'status' => 'failure', 'msg' => $responseBody];

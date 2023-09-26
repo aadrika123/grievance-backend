@@ -45,4 +45,12 @@ class GrievanceActiveQuestion extends Model
         GrievanceActiveQuestion::where('id', $id)
             ->update($reqBody);
     }
+
+    /**
+     * | Get grievance by id
+     */
+    public function getActiveQuestionById($id)
+    {
+        return GrievanceActiveQuestion::where('id', $id);
+    }
 }
