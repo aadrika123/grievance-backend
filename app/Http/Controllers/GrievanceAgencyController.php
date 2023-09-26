@@ -157,18 +157,20 @@ class GrievanceAgencyController extends Controller
         try {
             $key        = $request->filterBy;
             $mUser      = new User();
-            $mobileNo   = $request->mobileNo;
+            $parameter   = $request->parameter;
             $msg        = "User and module related details!";
 
             # Distinguish btw filter parameter
             switch ($request->filterBy) {
                 case ('mobileNo'):
-                    $userDetails = $mUser->getUserByMobileNo($mobileNo)->first();
+                    $userDetails = $mUser->getUserByMobileNo($parameter)->first();
                     break;
-                case ('holdingNo'):
-                    $this->launchHttpRequestV2($request);
-                    $userDetails = $mUser->getUserByMobileNo($mobileNo)->first();
-                    break;
+                    // case ('holdingNo'):
+                    //     $this->launchHttpRequestV2($request);
+                    //     $userDetails = $mUser->getUserByMobileNo($parameter)->first();
+                    //     break;
+                default:
+                    throw new Exception("Data in module dont exist!");
             }
             return responseMsgs(true, $msg, remove_null($userDetails), "", "01", responseTime(), $request->getMethod(), $request->deviceId);
         } catch (Exception $e) {
