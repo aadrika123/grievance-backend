@@ -11,6 +11,7 @@ use App\Models\Property\PropActiveSaf;
 use App\Models\ThirdParty\ApiMaster;
 use App\Models\User;
 use App\Models\Workflow\ModuleMaster;
+use App\Models\Workflow\WfWorkflow;
 use App\Pipelines\Grievance\SearchProperty;
 use App\Traits\GrievanceTrait;
 use App\Traits\Workflow\Workflow;
@@ -141,55 +142,54 @@ class GrievanceAgencyController extends Controller
         | Under Con :
         | Priority first
      */
-    // public function getUserDetails(Request $request)
-    // {
-    //     $validated = Validator::make(
-    //         $request->all(),
-    //         [
-    //             "filterBy"  => "required|",
-    //             "parameter" => "required|",
-    //         ]
-    //     );
-    //     if ($validated->fails()) {
-    //         return validationError($validated);
-    //     }
-    //     try {
-    //         $key        = $request->filterBy;
-    //         $mUser      = new User();
-    //         $mobileNo   = $request->mobileNo; hh
-    //         $msg        = "User and module related details!";
+    public function getUserDetails(Request $request)
+    {
+        $validated = Validator::make(
+            $request->all(),
+            [
+                "filterBy"  => "required|",
+                "parameter" => "required|",
+            ]
+        );
+        if ($validated->fails()) {
+            return validationError($validated);
+        }
+        try {
+            $key        = $request->filterBy;
+            $mUser      = new User();
+            $mobileNo   = $request->mobileNo;
+            $msg        = "User and module related details!";
 
-    //         $response = app(Pipeline::class)
-    //             ->send($request->all())
-    //             ->through([
-    //                 SearchProperty::class,
-    //                 SearchTrade::class,
-    //                 SearchWater::class,
-    //                 // SearchAdvertisement::class,
-    //                 // SearchMunicipalRental::class,
-    //                 // SearchDailyLicenseFee::class
-    //             ])
-    //             ->thenReturn();
-    //         if(!$response)
-    //         {
-    //             $msg = "Data not found!";
-    //         }
+            # Distinguish btw filter parameter
+            switch ($request->filterBy) {
+                case ('mobileNo'):
+                    $userDetails = $mUser->getUserByMobileNo($mobileNo)->first();
+                    break;
+                case ('holdingNo'):
+                    $this->launchHttpRequestV2($request);
+                    $userDetails = $mUser->getUserByMobileNo($mobileNo)->first();
+                    break;
+            }
+            return responseMsgs(true, $msg, remove_null($userDetails), "", "01", responseTime(), $request->getMethod(), $request->deviceId);
+        } catch (Exception $e) {
+            return responseMsgs(false, $e->getMessage(), [], "", "01", responseTime(), $request->getMethod(), $request->deviceId);
+        }
+    }
 
-    //         // $userDetails = $mUser->getUserByMobileNo($mobileNo)->first();
-    //         // if (!$userDetails) {
-    //         //     $msg = "User Details don't exist according to $mobileNo";
-    //         // }
-    //         return responseMsgs(true, $msg, $response, "", "01", responseTime(), $request->getMethod(), $request->deviceId);
-    //     } catch (Exception $e) {
-    //         return responseMsgs(false, $e->getMessage(), [], "", "01", responseTime(), $request->getMethod(), $request->deviceId);
-    //     }
-    // }
+
+    /**
+     * | Launch the http request V2 for module related details 
+     */
+    public function launchHttpRequestV2($request)
+    {
+    }
 
 
     /**
      * | Get user transaction details for for respective module
         | Serial No :
         | Under Con
+        | Get proper api for module details 
      */
     public function getTransactionDetails(Request $request)
     {
@@ -222,20 +222,20 @@ class GrievanceAgencyController extends Controller
             ];
             switch ($moduleId) {
                 case ($confModuleIds['WATER']):
-                    $endPoint = "192.168.0.240:84/api/water/grievance/get-user-transactions";
+                    $endPoint = "192.168.0.240:84/api/water/grievance/get-user-transactions";                                       // Static
                     $httpResponse = $this->launchHttpRequest($endPoint, $transferData);
                     $unstructuredData = $httpResponse->data;
                     $returnData = $this->structureWaterTranData($unstructuredData);
                     break;
                 case ($confModuleIds['PROPERTY']):
-                    $endPoint = "192.168.0.240:84/api/property/get-user-transaction-details";
+                    $endPoint = "192.168.0.240:84/api/property/get-user-transaction-details";                                       // Static
                     $httpResponse = $this->launchHttpRequest($endPoint, $transferData);
                     $unstructuredData = $httpResponse->data;
                     $unstructuredData = array_merge($unstructuredData->propTransaction, $unstructuredData->safTransaction);
                     $returnData = $this->structurePropTranData($unstructuredData);
                     break;
                 case ($confModuleIds['TRADE']):
-                    $endPoint = "192.168.0.211:8002/api/trade/application/citizen-history";
+                    $endPoint = "192.168.0.211:8002/api/trade/application/citizen-history";                                         // Static
                     $httpResponse = $this->launchHttpRequest($endPoint, $transferData);
                     $unstructuredData = $httpResponse->data;
                     $returnData = $this->structureTradeTranData($unstructuredData);
@@ -738,7 +738,7 @@ class GrievanceAgencyController extends Controller
                     $request->merge([
                         "applyDate" => $request->applyDate ?? $now,
                         "closeDate" => $now,
-                        "initiator" => $user->id,
+                        "initiator" => $request->initiator ?? $user->id,
                         "finisher"  => $user->id,
                     ]);
                     $mGrievanceClosedQuestion->saveClosedQuestionData($request, null);
@@ -844,8 +844,8 @@ class GrievanceAgencyController extends Controller
             $confRoles = $this->_grievanceRoleLevel;
             $mGrievanceActiveQuestion = new GrievanceActiveQuestion();
             $request->merge([
-                "initiator"     => $confRoles['TS'],
-                "current_role"  => $confRoles['TS']
+                "initiator"     => $confRoles['APM'],
+                "current_role"  => $confRoles['APM']
             ]);
             $mGrievanceActiveQuestion->saveQuestion($request);
             return responseMsgs(true, "Application forwarded!", [], "", "01", responseTime(), $request->getMethod(), $request->deviceId);
@@ -863,9 +863,28 @@ class GrievanceAgencyController extends Controller
     public function getActiveQuestions(Request $request)
     {
         try {
-            $pages = $request->pages ?? 10;
+            $user   = authUser($request);
+            $pages  = $request->pages ?? 10;
+            $ulbId  = $user->ulb_id ?? 2;                                        // Static
             $mGrievanceActiveQuestion = new GrievanceActiveQuestion();
+            $mWfWorkflow = new WfWorkflow();
+            $refWorkflow = $this->_workflowMstId;
+
+            # Check user detials
+            // $ulbWorkflowId = $mWfWorkflow->getulbWorkflowId($refWorkflow, $ulbId);
+            // if (!$ulbWorkflowId) {
+            //     throw new Exception("Respective Ulb is not maped to Water Workflow!");
+            // }
+            // $request->merge([
+            //     "workflowId" => $ulbWorkflowId->id
+            // ]);
+            // $roleDetails = $this->getRole($request);
+            // if (!collect($roleDetails)->first()) {
+            //     throw new Exception("Role not found!");
+            // }
+
             $appliedQuestions = $mGrievanceActiveQuestion->listActiveQuestions()
+                // ->where('current_role', $roleDetails['wf_role_id'])
                 ->paginate($pages);
             return responseMsgs(true, "Question list!", remove_null($appliedQuestions), "", "01", responseTime(), $request->getMethod(), $request->deviceId);
         } catch (Exception $e) {
@@ -873,6 +892,78 @@ class GrievanceAgencyController extends Controller
         }
     }
 
+
+    /**
+     * | Close the question according to details
+        | Serial No :
+        | Under Con  
+        | Remove the validation 
+     */
+    public function closeQuestionByLevel(Request $request)
+    {
+        $validated = Validator::make(
+            $request->all(),
+            [
+                "questionId"    => "required|int",
+                "answers"       => "required"
+            ]
+        );
+        if ($validated->fails()) {
+            return validationError($validated);
+        }
+        try {
+            $now                        = Carbon::now();
+            $user                       = authUser($request);
+            $questionId                 = $request->questionId;
+            $mGrievanceClosedQuestion   = new GrievanceClosedQuestion();
+            $mGrievanceActiveQuestion   = new GrievanceActiveQuestion();
+            $msg                        = "Grievance closed!";
+            $confStatus                 = $this->_solvedStatus;
+
+            $activeQuestion = $mGrievanceActiveQuestion->listActiveQuestions()
+                ->where('id', $questionId)
+                ->first();
+            // $this->checkParamForClose($activeQuestion, $user);
+            $request->merge([
+                "applyDate"     => $activeQuestion->apply_date,
+                "closeDate"     => $now,
+                "initiator"     => $activeQuestion->initiator,
+                "finisher"      => $user->id,
+                "questionId"    => $questionId,
+                "ans"           => $request->answers,
+                "moduleId"      => $activeQuestion->module_id,
+                "remarks"       => $activeQuestion->remarks,
+                "priority"      => $activeQuestion->priority,
+            ]);
+            $metaBody = [
+                "status" => $confStatus['CLOSED']
+            ];
+            $this->begin();
+            $mGrievanceClosedQuestion->saveClosedQuestionData($request, null);
+            $mGrievanceActiveQuestion->updateDetails($metaBody, $questionId);
+            $this->commit();
+            return responseMsgs(true, "Question list!", [], "", "01", responseTime(), $request->getMethod(), $request->deviceId);
+        } catch (Exception $e) {
+            $this->rollback();
+            return responseMsgs(false, $e->getMessage(), [], "", "01", responseTime(), $request->getMethod(), $request->deviceId);
+        }
+    }
+
+    /**
+     * | Check param for close 
+        | Serial No :
+        | Under Con
+     */
+    public function checkParamForClose($activeQuestion, $user)
+    {
+        $roleId = $this->getRoleIdByUserId($user->id)->pluck('wf_role_id');
+        if (!$activeQuestion) {
+            throw new Exception("Active Question not found!");
+        }
+        if (!in_array($activeQuestion->current_role, $roleId->toArray())) {
+            throw new Exception("You Dont have the autherised role!");
+        }
+    }
 
 
 

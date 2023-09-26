@@ -36,4 +36,13 @@ class GrievanceActiveQuestion extends Model
         return GrievanceActiveQuestion::where('status', 1)
             ->orderByDesc('id');
     }
+
+    /**
+     * | Update the application details 
+     */
+    public function updateDetails($reqBody, $id)
+    {
+        GrievanceActiveQuestion::where('id', $id)
+            ->update($reqBody);
+    }
 }

@@ -30,7 +30,8 @@ class closeGrievanceReq extends FormRequest
         $rules["applyDate"]     = 'nullable';
         $rules["remarks"]       = 'nullable';
         $rukes["setPriority"]   = 'nullable|in:1,2,3,4,5';
-        $rules["mobileNo"]      = 'required|numeric|digits:10';
+        $rules["mobileNo"]      = 'nullable|numeric|digits:10';
+        $rules["initiator"]     = 'nullable|int';
         return $rules;
     }
     protected function failedValidation(Validator $validator)

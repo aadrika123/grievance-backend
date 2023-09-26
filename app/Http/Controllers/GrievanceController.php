@@ -945,7 +945,7 @@ class GrievanceController extends Controller
                 "workflowId" => $GrievanceActiveApplicantion->workflow_id
             ]);
             $roleDetails = $this->getRole($request);
-            if (!$roleDetails) {
+            if (!collect($roleDetails)->first()) {
                 throw new Exception("Role details not found!");
             }
             $this->checkPostRoleCondition($roleDetails, $GrievanceActiveApplicantion);
@@ -2209,7 +2209,7 @@ class GrievanceController extends Controller
                 'userId'        => $user->id
             ]);
             $roleDetails = $this->getRole($request);
-            if (!$roleDetails) {
+            if (!collect($roleDetails)->first()) {
                 throw new Exception("Role details not found!");
             }
             $this->checkParamForAgncyCloser($request, $solvedGrievanceDetails, $roleDetails);
