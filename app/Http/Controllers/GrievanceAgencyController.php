@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\Grievance\closeGrievanceReq;
+use App\Models\ActiveCitizen;
 use App\Models\Grievance\GrievanceActiveApplicantion;
 use App\Models\Grievance\GrievanceActiveQuestion;
 use App\Models\Grievance\GrievanceClosedQuestion;
@@ -155,20 +156,39 @@ class GrievanceAgencyController extends Controller
             return validationError($validated);
         }
         try {
-            $key        = $request->filterBy;
-            $mUser      = new User();
-            $parameter  = $request->parameter;
-            $msg        = "User and module related details!";
+            $key            = $request->filterBy;
+            $mUser          = new User();
+            $mActiveCitizen = new ActiveCitizen();
+            $parameter      = $request->parameter;
+            $msg            = "User and module related details!";
 
             # Distinguish btw filter parameter
             switch ($request->filterBy) {
                 case ('mobileNo'):
                     $userDetails = $mUser->getUserByMobileNo($parameter)->first();
                     break;
-                    // case ('holdingNo'):
-                    //     $this->launchHttpRequestV2($request);
-                    //     $userDetails = $mUser->getUserByMobileNo($parameter)->first();
-                    //     break;
+                case ('holdingNo'):
+                    $transferData = [
+                        "connectionThrough"     => 1,                                                   // Static
+                        "id"                    => $parameter,
+                        "ulbId"                 => 2                                                    // Static
+                    ];
+                    $endPoint = "192.168.0.240:84/api/water/search-holding-saf";
+                    $httpResponse = $this->launchHttpRequest($endPoint, $transferData);
+                    return $unstructuredData = $httpResponse->data;
+                    $this->structurePropDetails($unstructuredData);
+                    break;
+                case ('safNo'):
+                    $transferData = [
+                        "connectionThrough"     => 2,                                                   // Static
+                        "id"                    => $parameter,
+                        "ulbId"                 => 2                                                    // Static
+                    ];
+                    $endPoint = "192.168.0.240:84/api/water/search-holding-saf";
+                    $httpResponse = $this->launchHttpRequest($endPoint, $transferData);
+                    return $unstructuredData = $httpResponse->data;
+                    $this->structurePropDetails($unstructuredData);
+                    break;
                 default:
                     throw new Exception("Data in module dont exist!");
             }
@@ -180,12 +200,14 @@ class GrievanceAgencyController extends Controller
 
 
     /**
-     * | Launch the http request V2 for module related details 
+     * | Structure the property details 
+     * | for holdingNo,safNo,
         | Serial No :
         | Under Con
      */
-    public function launchHttpRequestV2($request)
+    public function structurePropDetails($unstructuredData)
     {
+        // $
     }
 
 
@@ -221,7 +243,7 @@ class GrievanceAgencyController extends Controller
             }
 
             $transferData = [
-                // "auth"      => $request->auth,
+                //"auth"      => $request->auth,
                 "citizenId" => $request->citizenId
             ];
             switch ($moduleId) {
@@ -239,7 +261,7 @@ class GrievanceAgencyController extends Controller
                     $returnData = $this->structurePropTranData($unstructuredData);
                     break;
                 case ($confModuleIds['TRADE']):
-                    $endPoint = "192.168.0.211:8002/api/trade/application/citizen-history";                                         // Static
+                    $endPoint = "192.168.0.211:8087/api/trade/application/citizen-history";                                         // Static
                     $httpResponse = $this->launchHttpRequest($endPoint, $transferData);
                     $unstructuredData = $httpResponse->data;
                     $returnData = $this->structureTradeTranData($unstructuredData);
@@ -455,7 +477,7 @@ class GrievanceAgencyController extends Controller
 
             # Http paylode
             $transferData = [
-                // "auth"      => $request->auth,
+                "auth"      => $request->auth,
                 "citizenId" => $citizenId
             ];
             # distinguishing the module wise API 
@@ -474,7 +496,7 @@ class GrievanceAgencyController extends Controller
                     $returnData = $this->structureDataForProperty($unstructuredData);
                     break;
                 case ($confModuleIds['TRADE']):
-                    $endPoint = "192.168.0.211:8002/api/trade/application/citizen-application-list";
+                    $endPoint = "192.168.0.211:8087/api/trade/application/citizen-application-list";
                     $httpResponse = $this->launchHttpRequest($endPoint, $transferData);
                     $unstructuredData = $httpResponse->data;
                     $returnData = $this->structureDataForTrade($unstructuredData);

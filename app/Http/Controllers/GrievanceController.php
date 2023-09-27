@@ -2015,6 +2015,7 @@ class GrievanceController extends Controller
      * | Check the Application detial in diff workflow
         | Serial No :
         | Under Con
+        | Check the commented code 
      */
     public function checkApplication($request, $applicationDetails, $parentWf)
     {
@@ -2707,7 +2708,9 @@ class GrievanceController extends Controller
     }
 
     /**
-     * | 
+     * | Get the Active and rejected appliaction details for citizen or other
+        | Serial No :
+        | Under Con
      */
     public function getActiveRejectApplication(Request $request)
     {
@@ -2952,13 +2955,13 @@ class GrievanceController extends Controller
     //     $pdf = Storage::put('public' . '/' . $url, $file);
 
     //     $whatsapp = (Whatsapp_Send(
-    //         6206998554,                                                    // <------- user mobile no
+    //         9113171918,                                                    // <------- user mobile no
     //         "file_test",            //send_pdf_1                           // <------- cofig
     //         [
     //             "content_type" => "pdf",
     //             [
-    //                 "link" => config('app.url') . "/getImageLink?path=" . $url,
-    //                 "filename" => "TEST_PDF" . ".pdf"
+    //                 "link" => config('app.url') . "/getImageLink?path=" . "Uploads/Notice/Remider/Property _ Akola Municipal Corporation.pdf",
+    //                 "filename" => "Payment Reciept" . "pdf"
     //             ]
     //         ],
     //         // "en_us"
