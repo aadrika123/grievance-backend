@@ -175,8 +175,8 @@ class GrievanceAgencyController extends Controller
                     ];
                     $endPoint = "192.168.0.240:84/api/water/search-holding-saf";
                     $httpResponse = $this->launchHttpRequest($endPoint, $transferData);
-                    return $unstructuredData = $httpResponse->data;
-                    $this->structurePropDetails($unstructuredData);
+                    $unstructuredData = $httpResponse->data;
+                    $userDetails = $this->structurePropDetails($unstructuredData);
                     break;
                 case ('safNo'):
                     $transferData = [
@@ -186,9 +186,11 @@ class GrievanceAgencyController extends Controller
                     ];
                     $endPoint = "192.168.0.240:84/api/water/search-holding-saf";
                     $httpResponse = $this->launchHttpRequest($endPoint, $transferData);
-                    return $unstructuredData = $httpResponse->data;
-                    $this->structurePropDetails($unstructuredData);
+                    $unstructuredData = $httpResponse->data;
+                    $userDetails = $this->structurePropDetails($unstructuredData);
                     break;
+
+                case ('safNo'):
                 default:
                     throw new Exception("Data in module dont exist!");
             }
@@ -207,7 +209,25 @@ class GrievanceAgencyController extends Controller
      */
     public function structurePropDetails($unstructuredData)
     {
-        // $
+        $ownerArray = (collect($unstructuredData->owners)->pluck('ownerName'))->toarray();
+        $mobileArray = (collect($unstructuredData->owners)->pluck('mobileNo'))->toarray();
+        $emailArray = (collect($unstructuredData->owners)->pluck('email'))->toarray();
+        $structuredData = [
+            "id" => $unstructuredData->id,
+            "user_name" => implode(',', $ownerArray) ?? null,
+            "mobile" => implode(',', $mobileArray) ?? null,
+            "email" => implode(',', $emailArray) ?? null,
+            "email_verified_at" => "",
+            "user_type" => "Citizen",
+            "ulb_id" => "",
+            "suspended" => "",
+            "super_user" => "",
+            "description" => "",
+            "address" => $unstructuredData->prop_address,
+            "propertyId" => $unstructuredData->id,
+            "holding_no" => $unstructuredData->holding_no
+        ];
+        return $structuredData;
     }
 
 
