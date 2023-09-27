@@ -477,8 +477,8 @@ class GrievanceAgencyController extends Controller
 
             # Http paylode
             $transferData = [
-                "auth"      => $request->auth,
-                "citizenId" => $citizenId
+                "citizenId" => $citizenId,
+                "userId" => $citizenId
             ];
             # distinguishing the module wise API 
             switch ($moduleId) {
@@ -489,6 +489,7 @@ class GrievanceAgencyController extends Controller
                     $returnData = $this->structureDataForWater($unstructuredData);
                     break;
                 case ($confModuleIds['PROPERTY']):
+                    $transferData["auth"] = $request->auth;
                     $endPoint = "192.168.0.240:84/api/property/citizens/applied-applications";
                     $transferData['module'] = "Property";                                               // Static
                     $httpResponse = $this->launchHttpRequest($endPoint, $transferData);
@@ -594,7 +595,13 @@ class GrievanceAgencyController extends Controller
      */
     public function structureDataForProperty($unstructuredData)
     {
-
+        $details = (collect($unstructuredData)->first());
+        $data = collect($details)->map(function ($values) {
+            return $values;
+        })->filter();
+        if (!$data->first()) {
+            return [];
+        };
         $filteredData = collect($unstructuredData)->map(function ($value) {
             return [
                 "id"                => $value->id,
