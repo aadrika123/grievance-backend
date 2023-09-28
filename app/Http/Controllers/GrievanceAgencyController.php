@@ -190,7 +190,7 @@ class GrievanceAgencyController extends Controller
                     $userDetails = $this->structurePropDetails($unstructuredData);
                     break;
 
-                case ('safNo'):
+                case ('waterApplicationNo'):
                 default:
                     throw new Exception("Data in module dont exist!");
             }
@@ -224,8 +224,9 @@ class GrievanceAgencyController extends Controller
             "super_user" => "",
             "description" => "",
             "address" => $unstructuredData->prop_address,
-            "propertyId" => $unstructuredData->id,
-            "holding_no" => $unstructuredData->holding_no
+            "propertyId" => $unstructuredData->id ?? "",
+            "holding_no" => $unstructuredData->holding_no ?? "",
+            "saf_no" => $unstructuredData->saf_no ?? ""
         ];
         return $structuredData;
     }
