@@ -166,6 +166,9 @@ class GrievanceAgencyController extends Controller
             switch ($request->filterBy) {
                 case ('mobileNo'):
                     $userDetails = $mUser->getUserByMobileNo($parameter)->first();
+                    if (!$userDetails) {
+                        $userDetails = $mActiveCitizen->getCitizenDetails($parameter)->first();
+                    }
                     break;
                 case ('holdingNo'):
                     $transferData = [
@@ -190,7 +193,8 @@ class GrievanceAgencyController extends Controller
                     $userDetails = $this->structurePropDetails($unstructuredData);
                     break;
 
-                case ('waterApplicationNo'):
+                // case ('waterApplicationNo'):
+
                 default:
                     throw new Exception("Data in module dont exist!");
             }

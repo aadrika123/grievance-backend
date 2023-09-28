@@ -8,4 +8,13 @@ use Illuminate\Database\Eloquent\Model;
 class ActiveCitizen extends Model
 {
     use HasFactory;
+    protected $connection = 'pgsql_master';
+
+    /**
+     * | Get the citizen details by mobile no 
+     */
+    public function getCitizenDetails($mobileNo)
+    {
+        return ActiveCitizen::where('mobile', $mobileNo);
+    }
 }
