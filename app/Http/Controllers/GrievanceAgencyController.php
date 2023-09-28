@@ -165,9 +165,9 @@ class GrievanceAgencyController extends Controller
             # Distinguish btw filter parameter
             switch ($request->filterBy) {
                 case ('mobileNo'):
-                    $userDetails = $mUser->getUserByMobileNo($parameter)->first();
+                    $userDetails = $mActiveCitizen->getCitizenDetails($parameter)->first();
                     if (!$userDetails) {
-                        $userDetails = $mActiveCitizen->getCitizenDetails($parameter)->first();
+                        $userDetails = $mUser->getUserByMobileNo($parameter)->first();
                     }
                     break;
                 case ('holdingNo'):
