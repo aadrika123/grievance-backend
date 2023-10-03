@@ -61,6 +61,7 @@ class GrievanceAgencyController extends Controller
     private $_solvedStatus;
     private $_moduleIds;
     private $_grammarList;
+    private $_masterQuestion;
 
     protected $_DB_NAME;
     protected $_DB;
@@ -155,6 +156,7 @@ class GrievanceAgencyController extends Controller
         if ($validated->fails()) {
             return validationError($validated);
         }
+
         try {
             $key            = $request->filterBy;
             $mUser          = new User();
@@ -193,7 +195,7 @@ class GrievanceAgencyController extends Controller
                     $userDetails = $this->structurePropDetails($unstructuredData);
                     break;
 
-                // case ('waterApplicationNo'):
+                case ('waterApplicationNo'):
 
                 default:
                     throw new Exception("Data in module dont exist!");
@@ -409,6 +411,10 @@ class GrievanceAgencyController extends Controller
                     ->orWhereNull('parent_question_id')
                     ->get();
             }
+            # this get all process
+            $this->_masterQuestion = $mMGrievanceQuestion->getAllQuestionList()
+                ->whereNot('parent_question_id', 0)
+                ->get();
             $nestedData     = $this->getMultipleLevelNesting($parentQuestions);
             $refPropData    = (collect($nestedData)->where('module', 'property'));
             $refWaterData   = (collect($nestedData)->where('module', 'water'));
@@ -435,20 +441,24 @@ class GrievanceAgencyController extends Controller
     public function getMultipleLevelNesting($parentQuestions)
     {
         # Get formatted data 
-        $mMGrievanceQuestion = new MGrievanceQuestion();
+        $consDatabase = collect($this->_masterQuestion);
         $finalizeQuestion = collect($parentQuestions)->map(function ($value)
-        use ($mMGrievanceQuestion) {
+        use ($consDatabase) {
             # Check if the question have child
-            $childQuestions = $mMGrievanceQuestion->getQuestionsByParentId($value->id)->get();
+            $childQuestions = $consDatabase->where('parent_question_id', $value->id)
+                ->where('status', true)
+                ->sortByDesc('id');
             if (!collect($childQuestions)->first()) {
                 $value['childQuestions'] = [];
                 return $value;
             }
 
-            # etarate the child process
+            # Etarate the child process
             $subChildQuestion = collect($childQuestions)->map(function ($secondValue)
-            use ($mMGrievanceQuestion) {
-                $childQuestions = $mMGrievanceQuestion->getQuestionsByParentId($secondValue->id)->get();
+            use ($consDatabase) {
+                $childQuestions = $consDatabase->where('parent_question_id', 1)
+                    ->where('status', true)
+                    ->sortByDesc('id');
                 if (!collect($childQuestions)->first()) {
                     $secondValue['childQuestions'] = [];
                     return $secondValue;
@@ -457,7 +467,7 @@ class GrievanceAgencyController extends Controller
                 $secondValue['childQuestions'] = $associatedChild;
                 return $secondValue;
             });
-            # format the data 
+            # Format the data 
             $value['childQuestions'] = ($subChildQuestion->filter())->toArray();
             return $value;
         });
@@ -955,7 +965,7 @@ class GrievanceAgencyController extends Controller
      * | Close the question according to details
         | Serial No :
         | Under Con  
-        | Remove the validation 
+        | Remove the validation comment 
      */
     public function closeQuestionByLevel(Request $request)
     {
@@ -1088,6 +1098,33 @@ class GrievanceAgencyController extends Controller
             throw new Exception("you are not autherised to forward!");
         }
     }
+
+
+    /**
+     * | P1 serch the user details for the grievance according to parmeter, module
+     * | Use in the first search criteria
+        | Serial No :
+        | Under Con
+     */
+    public function getUserDetailsV2(Request $request)
+    {
+        $validated = Validator::make(
+            $request->all(),
+            [
+                "filterBy"  => "required|",
+                "module"    => "nullable|",
+                "parameter" => "required|",
+            ]
+        );
+        if ($validated->fails()) {
+            return validationError($validated);
+        }
+        try {
+        } catch (Exception $e) {
+            return responseMsgs(false, $e->getMessage(), [], "", "01", responseTime(), $request->getMethod(), $request->deviceId);
+        }
+    }
+
 
 
 
@@ -1423,4 +1460,26 @@ class GrievanceAgencyController extends Controller
     //         $mMGrievanceQuestion->save();
     //     });
     // }
+
+    /**
+     * | test the ump 
+     */
+    public function testUmps(Request $request)
+    {
+        $transferData = [
+            "request" => [
+                "action" => "cdrapi",
+                "cookie" => "sid908136319-1695974155",
+                "format" => "json",
+                "callee" => "09421824647"
+            ]
+        ];
+        $returnReq = Http::post("https://ucmserver.modernulb.com/api", $transferData);
+        $httpReqData = json_decode($returnReq);
+
+        if (!$httpReqData) {
+            throw new Exception("Data not found or the api not responding! , $httpReqData");
+        }
+        return $httpReqData;
+    }
 }

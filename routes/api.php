@@ -104,9 +104,16 @@ Route::controller(GrievanceAgencyController::class)->group(function () {
     Route::post('agency/close-grievance-question', 'closePassGrievance');                   // uc
     Route::post('agency/post-query-to-workflow', 'sendQueriesToWorkflow');                  // uc
     Route::post('agency/get-dashboard-details', 'getDashboardDetails');                     // uc
+
+    Route::post('agency/post-question-next-level', 'forwardQuestion');
     Route::post('agency/forward-querry', 'forwardToAmp');                                   // uc 
-    Route::post('agency/forward-to-ts', 'forwardToTs');                                    // uc
+    Route::post('agency/forward-to-ts', 'forwardToTs');                                     // uc
+
     Route::post('agency/list-active-questions', 'getActiveQuestions');                      // uc
     Route::post('agency/close-question', 'closeQuestionByLevel');                           // uc
+
+
+    // Testing routes
+    Route::post('testUmps', 'testUmps');                                                    // test
 });
 // });
